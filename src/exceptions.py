@@ -1,0 +1,2 @@
+class MethodException(object):
+    pass
