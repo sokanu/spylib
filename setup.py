@@ -5,5 +5,5 @@ setup(
     name="Spylib",
     version="0.0dev",
     packages=["src"],
-    long_description=open("README.txt").read(),
+    long_description=open("README.md").read(),
 )
