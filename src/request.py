@@ -5,11 +5,30 @@ from __future__ import absolute_import
 from six.moves.urllib.parse import urljoin
 from requests import get, delete, post, patch, put
 from exceptions import MethodException, LoginException
+import json
 
 
 class Request(object):
     def __init__(self, base_url):
         self.base_url = base_url
+
+    def make_service_request_for_all_data(
+        self, token, path=None, payload=None, method="GET", start_page=1, page_size=100
+    ):
+        payload["page"] = start_page
+        payload["page_size"] = page_size
+        data = []
+        while payload["page"] is not None:
+            response = self.make_service_request(
+                path=path, payload=payload, method=method
+            )
+            if response.status_code >= 300:
+                return data
+            response_content = json.loads(response.content)
+            data = data + response_content["results"]
+            payload["page"] = response_content["metadata"]["next_page"]
+
+        return data
 
     def make_service_request(
         self,
