@@ -33,7 +33,9 @@ class Request(object):
     def make_service_request(
         self, path=None, method="GET", payload=None, timeout=2, retry_count=1, **kwargs
     ):
-        headers = {"Authorization": "Bearer %s" % self.access_token}
+        headers = kwargs.get("headers", {})
+        if self.access_token:
+            headers.update({"Authorization": "Bearer %s" % self.access_token})
         url = urljoin(self.base_url, path)
 
         if method == "GET":
