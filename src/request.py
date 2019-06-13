@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from six.moves.urllib.parse import urljoin
 from requests import get, delete, post, patch, put
-from exceptions import MethodException, LoginException, RefreshException
+from .exceptions import MethodException, LoginException, RefreshException
 from jwt import decode, DecodeError, ExpiredSignatureError
 
 
@@ -21,7 +21,7 @@ class Request(object):
         try:
             if access_token:
                 decode(access_token, secret=secret, algorithms=[algorithm])
-                self.access_token = access_token
+            self.access_token = access_token
         except ExpiredSignatureError:
             self.access_token = Request.refresh(base_url, refresh_token)
         except (DecodeError, KeyError, Exception) as e:
@@ -93,10 +93,10 @@ class Request(object):
 
     def login(self, uuid, api_key):
         """
-        Login a user on auth, the access_token and refresh_token on the object.
+        Login a user on auth, returns access_token and refresh_token.
         """
         resp = self.make_service_request(
-            "api/v1/login", json={"api_key": api_key, "uuid": uuid}
+            "api/v1/login", method="POST", payload={"api_key": api_key, "uuid": uuid}
         )
         if resp.status_code != 200:
             raise LoginException("Auth service login failed")
