@@ -10,10 +10,18 @@ class Request(object):
     Contains methods for cross service requests.
     """
 
-    def __init__(self, base_url, access_token, secret, algorithm, refresh_token=None):
+    def __init__(
+        self,
+        base_url,
+        access_token=None,
+        secret=None,
+        algorithm=None,
+        refresh_token=None,
+    ):
         try:
-            decode(access_token, secret=secret, algorithms=[algorithm])
-            self.access_token = access_token
+            if access_token:
+                decode(access_token, secret=secret, algorithms=[algorithm])
+                self.access_token = access_token
         except ExpiredSignatureError:
             self.access_token = Request.refresh(base_url, refresh_token)
         except (DecodeError, KeyError, Exception) as e:
@@ -23,24 +31,23 @@ class Request(object):
             self.base_url = base_url
 
     def make_service_request(
-        self, path=None, method="GET", payload=None, timeout=2, retry_count=1
+        self, path=None, method="GET", payload=None, timeout=2, retry_count=1, **kwargs
     ):
         headers = {"Authorization": "Bearer %s" % self.access_token}
         url = urljoin(self.base_url, path)
-        if method not in ["GET", "DELETE", "POST", "PATCH", "PUT"]:
-            raise Exception
+
         if method == "GET":
-            resp = get(url, params=payload, headers=headers, timeout=timeout)
+            resp = get(url, params=payload, headers=headers, timeout=timeout, **kwargs)
         elif method == "DELETE":
-            resp = delete(url, headers=headers, timeout=timeout)
+            resp = delete(url, headers=headers, timeout=timeout, **kwargs)
         elif method == "POST":
-            resp = post(url, json=payload, headers=headers, timeout=timeout)
+            resp = post(url, json=payload, headers=headers, timeout=timeout, **kwargs)
         elif method == "PATCH":
-            resp = patch(url, json=payload, headers=headers, timeout=timeout)
+            resp = patch(url, json=payload, headers=headers, timeout=timeout, **kwargs)
         elif method == "PUT":
-            resp = put(url, json=payload, headers=headers, timeout=timeout)
+            resp = put(url, json=payload, headers=headers, timeout=timeout, **kwargs)
         else:
-            raise MethodException("Invalid method provided to HTTP request")
+            raise MethodException
 
         UNKNOWN_SERVER_ERROR = 500
 
@@ -68,27 +75,31 @@ class Request(object):
                 )
         return resp
 
-    @staticmethod
-    def refresh(base_url, refresh_token):
-        if not refresh_token:
+    def refresh(self):
+        if not self.refresh_token:
             raise RefreshException
-        url = urljoin(base_url, "api/v1/tokens")
-        cookies = {"refresh_token": refresh_token}
-        resp = post(url, cookies=cookies, timeout=2)
+        cookies = {"refresh_token": self.refresh_token}
+        resp = self.make_service_request(
+            path="/api/v1/tokens", method="POST", cookies=cookies, timeout=2
+        )
         if resp.status_code != 201:
             raise RefreshException
-        return resp.json().get("access_token")
+        access_token = resp.json().get("access_token")
+        if not access_token:
+            raise RefreshException
+        return access_token
 
-    @staticmethod
-    def login(base_url, uuid, api_key):
+    def login(self, uuid, api_key):
         """
         Login a user on auth, the access_token and refresh_token on the object.
         """
-        url = urljoin(base_url, "api/v1/login")
-        resp = post(url, json={"api_key": api_key, "uuid": uuid})
+        resp = self.make_service_request(
+            "api/v1/login", json={"api_key": api_key, "uuid": uuid}
+        )
         if resp.status_code != 200:
             raise LoginException("Auth service login failed")
-        return {
-            "access_token": resp.json().get("access_token"),
-            "refresh_token": resp.cookies["refresh_token"],
-        }
+        access_token = resp.json().get("access_token")
+        refresh_token = resp.cookies["refresh_token"]
+        if access_token is None or refresh_token is None:
+            raise LoginException
+        return {"access_token": access_token, "refresh_token": refresh_token}
