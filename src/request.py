@@ -1,52 +1,34 @@
-"""
-Contains methods for cross service requests.
-"""
 from __future__ import absolute_import
 from six.moves.urllib.parse import urljoin
 from requests import get, delete, post, patch, put
-from exceptions import MethodException, LoginException
-import json
+from exceptions import MethodException, LoginException, RefreshException
+from jwt import decode, DecodeError, ExpiredSignatureError
 
 
 class Request(object):
-    def __init__(self, base_url):
-        self.base_url = base_url
+    """
+    Contains methods for cross service requests.
+    """
 
-    def make_service_request_for_all_data(
-        self, token, path=None, payload=None, method="GET", start_page=1, page_size=100
-    ):
-        payload["page"] = start_page
-        payload["page_size"] = page_size
-        data = []
-        while payload["page"] is not None:
-            response = self.make_service_request(
-                path=path, payload=payload, method=method
-            )
-            if response.status_code >= 300:
-                return data
-            response_content = json.loads(response.content)
-            data = data + response_content["results"]
-            payload["page"] = response_content["metadata"]["next_page"]
-
-        return data
+    def __init__(self, base_url, access_token, secret, algorithm, refresh_token=None):
+        try:
+            decode(access_token, secret=secret, algorithms=[algorithm])
+            self.access_token = access_token
+        except ExpiredSignatureError:
+            self.access_token = Request.refresh(base_url, refresh_token)
+        except (DecodeError, KeyError, Exception) as e:
+            raise e
+        else:
+            self.refresh_token = refresh_token
+            self.base_url = base_url
 
     def make_service_request(
-        self,
-        token,
-        path=None,
-        method="GET",
-        payload=None,
-        retry=True,
-        timeout=2,
-        auth_credentials=None,
-        retry_count=1,
+        self, path=None, method="GET", payload=None, timeout=2, retry_count=1
     ):
-        # TODO: Need to determine best way of handling MOCK for local.
-        headers = {"Authorization": "Bearer %s" % token}
+        headers = {"Authorization": "Bearer %s" % self.access_token}
         url = urljoin(self.base_url, path)
         if method not in ["GET", "DELETE", "POST", "PATCH", "PUT"]:
             raise Exception
-
         if method == "GET":
             resp = get(url, params=payload, headers=headers, timeout=timeout)
         elif method == "DELETE":
@@ -60,47 +42,53 @@ class Request(object):
         else:
             raise MethodException("Invalid method provided to HTTP request")
 
-        if retry_count > 0 and resp.status_code < 200 and resp.status_code >= 300:
+        UNKNOWN_SERVER_ERROR = 500
+
+        if retry_count > 0 and resp.status_code >= UNKNOWN_SERVER_ERROR:
             self.make_service_request(
-                token,
                 path=path,
                 method=method,
                 payload=payload,
                 timeout=timeout,
-                auth_credentials=auth_credentials,
                 retry_count=retry_count - 1,
             )
-        """
-        # fetch new jwt if unauthorized
-        if retry and resp.status_code == 401:
-            cache.set("AUTH_JWT_TOKEN", token_method())
-            self.make_service_request(
-                base_url, path=path, method=method, payload=payload, retry=False
-            )
-        """
+        elif resp.status_code == 401:
+            try:
+                decode(self.access_token, self.secret, algorithms=[self.algorithm])
+            except ExpiredSignatureError:
+                if not self.refresh_token:
+                    raise ExpiredSignatureError
+                self.access_token = Request.refresh(self.refresh_token)
+                self.make_service_request(
+                    path=path,
+                    method=method,
+                    payload=payload,
+                    timeout=timeout,
+                    retry_count=retry_count - 1,
+                )
         return resp
 
-    def get_auth_jwt(self, uuid, api_key):
+    @staticmethod
+    def refresh(base_url, refresh_token):
+        if not refresh_token:
+            raise RefreshException
+        url = urljoin(base_url, "api/v1/tokens")
+        cookies = {"refresh_token": refresh_token}
+        resp = post(url, cookies=cookies, timeout=2)
+        if resp.status_code != 201:
+            raise RefreshException
+        return resp.json().get("access_token")
+
+    @staticmethod
+    def login(base_url, uuid, api_key):
         """
-        makes a request to auth /login endpoint, and returns the jwt that is obtained
+        Login a user on auth, the access_token and refresh_token on the object.
         """
-        url = urljoin(self.base_url, "api/v1/login")
+        url = urljoin(base_url, "api/v1/login")
         resp = post(url, json={"api_key": api_key, "uuid": uuid})
         if resp.status_code != 200:
             raise LoginException("Auth service login failed")
-        return resp.json().get("access_token")
-
-    """
-    @staticmethod
-    def get_mock_jwt():
-        return os.environ.get("AUTH_JWT_TOKEN_STUB")
-
-    @staticmethod
-    def get_token_method():
-        if os.environ.get("AUTH_JWT_TOKEN_STUB") and settings.DEBUG:
-            return BabelFish.get_mock_jwt
-        return BabelFish.get_auth_jwt
-    """
-
-
-# def _get_jwt():
+        return {
+            "access_token": resp.json().get("access_token"),
+            "refresh_token": resp.cookies["refresh_token"],
+        }

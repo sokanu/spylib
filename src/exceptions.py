@@ -1,4 +1,8 @@
-class AuthLoginException(Exception):
+class LoginException(Exception):
+    pass
+
+
+class RefreshException(Exception):
     pass
 
 
