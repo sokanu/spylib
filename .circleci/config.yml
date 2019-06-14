@@ -9,6 +9,6 @@ jobs:
     steps:
       - run: python3 -m unittest
 workflows:
-  - test:
+  test:
     jobs:
       - test
