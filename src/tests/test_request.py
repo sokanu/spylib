@@ -169,3 +169,11 @@ class TestRequest(unittest.TestCase):
 
         assert resp.get("access_token") == "5678"
         assert resp.get("refresh_token") == "1234"
+
+    @responses.activate
+    def test_make_service_request_retries_successfully(self):
+        """
+        Given:
+            - a counter
+            - a bad response that's a 500
+        """
