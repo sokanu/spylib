@@ -218,7 +218,7 @@ class TestRequest(unittest.TestCase):
         When:
             - a make service request is executed
         Outcome:
-            - one calls to the mock responses are made.
+            - one call to the mock responses are made.
         """
 
         def request_callback(request):
