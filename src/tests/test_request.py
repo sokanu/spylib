@@ -126,6 +126,37 @@ class TestRequest(unittest.TestCase):
             )
 
     @responses.activate
+    def test_refresh_token_gets_new_access_token_success(self):
+        """
+        Given:
+            - an access token
+            - a mocked URL returning a 201.
+        When:
+            -
+        """
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(-30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        responses.add(
+            responses.POST,
+            "https://localhost:8000/api/v1/tokens",
+            status=201,
+            body=json.dumps({"access_token": "1234"}),
+        )
+        res = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            algorithm=algorithm,
+            secret=secret,
+            refresh_token="1234",
+        )
+        assert res.access_token == "1234"
+
+    @responses.activate
     def test_login_raises_login_exception_on_failure(self):
         """
         Given:
@@ -249,3 +280,112 @@ class TestRequest(unittest.TestCase):
             path="/api/v1/test", method="POST", retry=False, payload={}
         )
         assert responses.calls.__len__() == 1
+
+    @responses.activate
+    def test_make_service_request_raises_with_expired_token_and_no_refresh_token(self):
+        """
+        Given:
+            - an expired access token.
+            - no refresh token.
+            - a 401 response from the server.
+        When:
+            - a make service request is executed
+        Outcome:
+            - ExpiredSignatureError occurs since no new token can be obtained.
+        """
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            secret=secret,
+            algorithm=algorithm,
+        )
+        # override the token with a bad one.
+        resp.access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(-30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+
+        # order here matters. matching urls will be hit in the order declared.
+        responses.add(
+            responses.GET, "https://localhost:8000/api/v1/test", status=401, json={}
+        )
+        responses.add(
+            responses.GET,
+            "https://localhost:8000/api/v1/test",
+            status=200,
+            json={"is_hit": True},
+        )
+        responses.add(
+            responses.POST,
+            "https://localhost:8000/api/v1/tokens",
+            status=201,
+            json={"access_token": "1234"},
+        )
+        with self.assertRaises(jwt.ExpiredSignatureError):
+            resp.make_service_request(
+                path="/api/v1/test", method="GET", retry=True, payload={}
+            )
+
+    @responses.activate
+    def test_make_service_request_with_expired_token(self):
+        """
+        Given:
+            - an expired access token.
+            - a valid refresh token.
+            - a 401 response from the server.
+        When:
+            - a make service request is executed
+        Outcome:
+            - a new access token is set.
+            - the response from the test server is retrieved.
+        """
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            refresh_token="1a2a3a",
+            secret=secret,
+            algorithm=algorithm,
+        )
+        # override the token with a bad one.
+        resp.access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(-30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+
+        # order here matters. matching urls will be hit in the order declared.
+        responses.add(
+            responses.GET, "https://localhost:8000/api/v1/test", status=401, json={}
+        )
+        responses.add(
+            responses.GET,
+            "https://localhost:8000/api/v1/test",
+            status=200,
+            json={"is_hit": True},
+        )
+        responses.add(
+            responses.POST,
+            "https://localhost:8000/api/v1/tokens",
+            status=201,
+            json={"access_token": "1234"},
+        )
+
+        res = resp.make_service_request(
+            path="/api/v1/test", method="GET", retry=True, payload={}
+        )
+        assert res.json().get("is_hit", False)

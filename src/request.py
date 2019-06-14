@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 from requests import get, delete, post, patch, put
 from .exceptions import MethodException, LoginException, RefreshException
-from jwt import decode, DecodeError, ExpiredSignatureError
+from jwt import decode, DecodeError
+from jwt.exceptions import ExpiredSignatureError
 from six.moves.urllib.parse import urljoin
 
 
@@ -19,18 +20,18 @@ class Request(object):
         refresh_token=None,
     ):
         try:
-            if access_token:
-                decode(access_token, secret, algorithms=[algorithm])
             self.access_token = access_token
-        except ExpiredSignatureError:
-            self.access_token = self.refresh(refresh_token)
-        except (DecodeError, KeyError, Exception) as e:
-            raise e
-        else:
             self.refresh_token = refresh_token
             self.base_url = base_url
             self.secret = secret
             self.algorithm = algorithm
+
+            if self.access_token:
+                decode(access_token, secret, algorithms=[algorithm])
+        except ExpiredSignatureError:
+            self.access_token = self.refresh(refresh_token)
+        except (DecodeError, KeyError, Exception) as e:
+            raise e
 
     def make_service_request(
         self, path=None, method="GET", payload=None, timeout=2, retry=True, **kwargs
@@ -65,7 +66,7 @@ class Request(object):
             except ExpiredSignatureError:
                 if not self.refresh_token:
                     raise ExpiredSignatureError
-                self.access_token = Request.refresh(self.refresh_token)
+                self.access_token = self.refresh(self.refresh_token)
                 return self.make_service_request(
                     path=path,
                     method=method,
@@ -82,7 +83,7 @@ class Request(object):
             raise RefreshException
         cookies = {"refresh_token": refresh_token}
         resp = self.make_service_request(
-            path="/api/v1/tokens", method="POST", cookies=cookies, timeout=2
+            path="/api/v1/tokens", method="POST", payload={}, timeout=2, cookies=cookies
         )
         if resp.status_code != 201:
             raise RefreshException
