@@ -33,7 +33,7 @@ class Request(object):
             self.algorithm = algorithm
 
     def make_service_request(
-        self, path=None, method="GET", payload=None, timeout=2, retry_count=1, **kwargs
+        self, path=None, method="GET", payload=None, timeout=2, retry=True, **kwargs
     ):
         headers = kwargs.get("headers", {})
         if self.access_token:
@@ -55,13 +55,9 @@ class Request(object):
 
         UNKNOWN_SERVER_ERROR = 500
 
-        if retry_count > 0 and resp.status_code >= UNKNOWN_SERVER_ERROR:
-            self.make_service_request(
-                path=path,
-                method=method,
-                payload=payload,
-                timeout=timeout,
-                retry_count=retry_count - 1,
+        if retry and resp.status_code >= UNKNOWN_SERVER_ERROR:
+            return self.make_service_request(
+                path=path, method=method, payload=payload, timeout=timeout, retry=False
             )
         elif resp.status_code == 401:
             try:
@@ -70,12 +66,12 @@ class Request(object):
                 if not self.refresh_token:
                     raise ExpiredSignatureError
                 self.access_token = Request.refresh(self.refresh_token)
-                self.make_service_request(
+                return self.make_service_request(
                     path=path,
                     method=method,
                     payload=payload,
                     timeout=timeout,
-                    retry_count=retry_count - 1,
+                    retry=False,
                 )
         return resp
 
