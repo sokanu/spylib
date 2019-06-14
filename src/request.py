@@ -4,6 +4,7 @@ from .exceptions import MethodException, LoginException, RefreshException
 from jwt import decode, DecodeError
 from jwt.exceptions import ExpiredSignatureError
 from six.moves.urllib.parse import urljoin
+from json import loads
 
 
 class Request(object):
@@ -32,6 +33,31 @@ class Request(object):
             self.access_token = self.refresh(refresh_token)
         except (DecodeError, KeyError, Exception) as e:
             raise e
+
+    def make_service_request_for_all_data(
+        self,
+        path=None,
+        method="GET",
+        payload=None,
+        start_page=1,
+        page_size=100,
+        timeout=2,
+        **kwargs
+    ):
+        payload["page"] = start_page
+        payload["page_size"] = page_size
+        data = []
+        while payload["page"] is not None:
+            response = self.make_service_request(
+                path=path, payload=payload, method=method
+            )
+            if response.status_code >= 300:
+                return data
+            response_content = loads(response.content)
+            data = data + response_content["results"]
+            payload["page"] = response_content["metadata"]["next_page"]
+
+        return data
 
     def make_service_request(
         self, path=None, method="GET", payload=None, timeout=2, retry=True, **kwargs
