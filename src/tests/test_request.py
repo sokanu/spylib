@@ -174,6 +174,78 @@ class TestRequest(unittest.TestCase):
     def test_make_service_request_retries_successfully(self):
         """
         Given:
-            - a counter
+            - retry option is configured by default.
             - a bad response that's a 500
+        When:
+            - a make service request is executed
+        Outcome:
+            - two calls to the mock responses are made.
         """
+
+        def request_callback(request):
+            resp_body = {}
+            headers = {"set-cookie": "refresh_token=1234;"}
+            return (500, headers, json.dumps(resp_body))
+
+        responses.add_callback(
+            responses.POST,
+            "https://localhost:8000/api/v1/test",
+            callback=request_callback,
+            content_type="application/json",
+        )
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            secret=secret,
+            algorithm=algorithm,
+        )
+        resp.make_service_request(path="/api/v1/test", method="POST", payload={})
+        assert responses.calls.__len__() == 2
+
+    @responses.activate
+    def test_make_service_request_no_retr_succeeds(self):
+        """
+        Given:
+            - a bad response that's a 500
+            - no retry set.
+        When:
+            - a make service request is executed
+        Outcome:
+            - one calls to the mock responses are made.
+        """
+
+        def request_callback(request):
+            resp_body = {}
+            headers = {"set-cookie": "refresh_token=1234;"}
+            return (500, headers, json.dumps(resp_body))
+
+        responses.add_callback(
+            responses.POST,
+            "https://localhost:8000/api/v1/test",
+            callback=request_callback,
+            content_type="application/json",
+        )
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            secret=secret,
+            algorithm=algorithm,
+        )
+        resp.make_service_request(
+            path="/api/v1/test", method="POST", retry=False, payload={}
+        )
+        assert responses.calls.__len__() == 1
