@@ -389,3 +389,98 @@ class TestRequest(unittest.TestCase):
             path="/api/v1/test", method="GET", retry=True, payload={}
         )
         assert res.json().get("is_hit", False)
+
+    @responses.activate
+    def test_make_service_request_delete_payload_succeeds(self):
+        """
+        Given:
+            - valid access token
+            - a mock payload to delete
+        When:
+            - a make service request is executed.
+        Outcome:
+            - a 200 is returned
+        """
+        responses.add(
+            responses.DELETE, "https://localhost:8000/api/v1/test", status=200
+        )
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            refresh_token="1a2a3a",
+            secret=secret,
+            algorithm=algorithm,
+        )
+        res = resp.make_service_request(
+            path="/api/v1/test", method="DELETE", retry=False
+        )
+        assert res.status_code == 200
+
+    @responses.activate
+    def test_make_service_request_patch_payload_succeeds(self):
+        """
+        Given:
+            - valid access token
+            - a mock endpoint to hit with PATCH method.
+        When:
+            - a make service request is executed.
+        Outcome:
+            - a 200 is returned
+        """
+        responses.add(responses.PATCH, "https://localhost:8000/api/v1/test", status=200)
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            refresh_token="1a2a3a",
+            secret=secret,
+            algorithm=algorithm,
+        )
+        res = resp.make_service_request(
+            path="/api/v1/test", method="PATCH", retry=False, payload={"test": "test"}
+        )
+        assert res.status_code == 200
+
+    @responses.activate
+    def test_make_service_request_put_payload_succeeds(self):
+        """
+        Given:
+            - valid access token
+            - a mock endpoint to hit with PUT method.
+        When:
+            - a make service request is executed.
+        Outcome:
+            - a 200 is returned
+        """
+        responses.add(responses.PUT, "https://localhost:8000/api/v1/test", status=201)
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            refresh_token="1a2a3a",
+            secret=secret,
+            algorithm=algorithm,
+        )
+        res = resp.make_service_request(
+            path="/api/v1/test", method="PUT", retry=False, payload={"test": "test"}
+        )
+        assert res.status_code == 201
