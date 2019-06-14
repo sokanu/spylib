@@ -8,4 +8,7 @@ jobs:
     executor: python3
     steps:
       - run: python3 -m unittest
-
+workflows:
+  test:
+    jobs:
+      - test
