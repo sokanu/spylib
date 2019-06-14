@@ -536,7 +536,17 @@ class TestRequest(unittest.TestCase):
         assert len(res) == 3
 
     @responses.activate
-    def test_make_service_request_empty_if_metadata_missing(self):
+    def test_make_service_request_if_metadata_missing(self):
+        """
+        Given:
+            - an endpoint with no meta data key.
+            - an endpoint with a results key.
+            - a request object
+        When:
+            - try to get all data
+        Outcome:
+            - only get the first call since metadata is missing which points to the next call.
+        """
         responses.add(
             responses.GET,
             "https://localhost:8000/api/v1/test?page=1&page_size=1",
@@ -570,3 +580,118 @@ class TestRequest(unittest.TestCase):
             "/api/v1/test", payload={}, method="GET", start_page=1, page_size=1
         )
         assert len(res) == 1
+
+    @responses.activate
+    def test_make_service_request_if_inconsistent_response(self):
+        """
+        Given:
+            - endpoint 1 has metadata but no results
+            - endpoint 2 has no metadata but results.
+            - a request object
+        When:
+            - try to get all data
+        Outcome:
+            - returns results from endpoint 2
+        """
+        responses.add(
+            responses.GET,
+            "https://localhost:8000/api/v1/test?page=1&page_size=1",
+            json={},
+            match_querystring=True,
+        )
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            refresh_token="1a2a3a",
+            secret=secret,
+            algorithm=algorithm,
+        )
+        res = resp.make_service_request_for_all_data(
+            "/api/v1/test", payload={}, method="GET", start_page=1, page_size=1
+        )
+        assert len(res) == 0
+
+    @responses.activate
+    def test_make_service_request_if_results_meta_data_missing(self):
+        """
+        Given:
+            - an endpoint that returns no results key or metadata key.
+            - a request object
+        When:
+            - try to get all data
+        Outcome:
+            - empty array returned
+        """
+        responses.add(
+            responses.GET,
+            "https://localhost:8000/api/v1/test?page=1&page_size=1",
+            json={"metadata": {"next_page": 2}},
+            match_querystring=True,
+        )
+        responses.add(
+            responses.GET,
+            "https://localhost:8000/api/v1/test?page=2&page_size=1",
+            json={"results": [{"2": True}]},
+            match_querystring=True,
+        )
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            refresh_token="1a2a3a",
+            secret=secret,
+            algorithm=algorithm,
+        )
+        res = resp.make_service_request_for_all_data(
+            "/api/v1/test", payload={}, method="GET", start_page=1, page_size=1
+        )
+        assert len(res) == 1
+
+    @responses.activate
+    def test_make_service_request_with_page_that_doesnt_exist(self):
+        """
+        Given:
+            - endpoint referring to an invalid page.
+            - a request object
+        When:
+            - try to get all data
+        Outcome:
+            - expect current data to be dumped as a result.
+        """
+        responses.add(
+            responses.GET,
+            "https://localhost:8000/api/v1/test?page=1&page_size=1",
+            json={"results": ["1"], "metadata": {"next_page": 501123}},
+            match_querystring=True,
+        )
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            refresh_token="1a2a3a",
+            secret=secret,
+            algorithm=algorithm,
+        )
+        res = resp.make_service_request_for_all_data(
+            "/api/v1/test", payload={}, method="GET", start_page=1, page_size=1
+        )
+        assert res == ["1"]

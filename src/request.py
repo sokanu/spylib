@@ -48,21 +48,23 @@ class Request(object):
         payload["page_size"] = page_size
         data = []
         while payload["page"] is not None:
-            response = self.make_service_request(
-                path=path, payload=payload, method=method
-            )
-            if response.status_code >= 300:
+            try:
+                response = self.make_service_request(
+                    path=path, payload=payload, method=method
+                )
+                if response.status_code >= 300:
+                    return data
+                response_content = loads(response.content)
+                if response_content.get("results"):
+                    data = data + response_content["results"]
+                if response_content.get("metadata") and response_content[
+                    "metadata"
+                ].get("next_page"):
+                    payload["page"] = response_content["metadata"]["next_page"]
+                else:
+                    payload["page"] = None
+            except Exception:
                 return data
-            response_content = loads(response.content)
-            if response_content.get("results"):
-                data = data + response_content["results"]
-            if response_content.get("metadata") and response_content["metadata"].get(
-                "next_page"
-            ):
-                payload["page"] = response_content["metadata"]["next_page"]
-            else:
-                payload["page"] = None
-
         return data
 
     def make_service_request(
