@@ -1,8 +1,8 @@
 from __future__ import absolute_import
-from six.moves.urllib.parse import urljoin
 from requests import get, delete, post, patch, put
 from .exceptions import MethodException, LoginException, RefreshException
 from jwt import decode, DecodeError, ExpiredSignatureError
+from six.moves.urllib.parse import urljoin
 
 
 class Request(object):
@@ -20,15 +20,17 @@ class Request(object):
     ):
         try:
             if access_token:
-                decode(access_token, secret=secret, algorithms=[algorithm])
+                decode(access_token, secret, algorithms=[algorithm])
             self.access_token = access_token
         except ExpiredSignatureError:
-            self.access_token = Request.refresh(base_url, refresh_token)
+            self.access_token = self.refresh(refresh_token)
         except (DecodeError, KeyError, Exception) as e:
             raise e
         else:
             self.refresh_token = refresh_token
             self.base_url = base_url
+            self.secret = secret
+            self.algorithm = algorithm
 
     def make_service_request(
         self, path=None, method="GET", payload=None, timeout=2, retry_count=1, **kwargs
@@ -77,10 +79,12 @@ class Request(object):
                 )
         return resp
 
-    def refresh(self):
-        if not self.refresh_token:
+    # TODO: These should be hardcoded to auth sub-domain.
+
+    def refresh(self, refresh_token):
+        if not refresh_token:
             raise RefreshException
-        cookies = {"refresh_token": self.refresh_token}
+        cookies = {"refresh_token": refresh_token}
         resp = self.make_service_request(
             path="/api/v1/tokens", method="POST", cookies=cookies, timeout=2
         )
