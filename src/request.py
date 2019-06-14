@@ -36,9 +36,9 @@ class Request(object):
 
     def make_service_request_for_all_data(
         self,
-        path=None,
+        path,
         method="GET",
-        payload=None,
+        payload={},
         start_page=1,
         page_size=100,
         timeout=2,
@@ -54,13 +54,19 @@ class Request(object):
             if response.status_code >= 300:
                 return data
             response_content = loads(response.content)
-            data = data + response_content["results"]
-            payload["page"] = response_content["metadata"]["next_page"]
+            if response_content.get("results"):
+                data = data + response_content["results"]
+            if response_content.get("metadata") and response_content["metadata"].get(
+                "next_page"
+            ):
+                payload["page"] = response_content["metadata"]["next_page"]
+            else:
+                payload["page"] = None
 
         return data
 
     def make_service_request(
-        self, path=None, method="GET", payload=None, timeout=2, retry=True, **kwargs
+        self, path, method="GET", payload=None, timeout=2, retry=True, **kwargs
     ):
         headers = kwargs.get("headers", {})
         if self.access_token:

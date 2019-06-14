@@ -484,3 +484,89 @@ class TestRequest(unittest.TestCase):
             path="/api/v1/test", method="PUT", retry=False, payload={"test": "test"}
         )
         assert res.status_code == 201
+
+    @responses.activate
+    def test_make_service_request_for_all_pages(self):
+        """
+        Given:
+            - a valid access token
+            - a set of data where the page payload is read.
+            - 5 pages?.
+        When:
+            - make a service request is made
+        Outcome:
+            - all the data is retrieved.
+            - 3 results should be obtained.
+        """
+        responses.add(
+            responses.GET,
+            "https://localhost:8000/api/v1/test?page=1&page_size=1",
+            json={"results": [{"1": True}], "metadata": {"next_page": 2}},
+            match_querystring=True,
+        )
+        responses.add(
+            responses.GET,
+            "https://localhost:8000/api/v1/test?page=2&page_size=1",
+            json={"results": [{"2": True}], "metadata": {"next_page": 3}},
+            match_querystring=True,
+        )
+        responses.add(
+            responses.GET,
+            "https://localhost:8000/api/v1/test?page=3&page_size=1",
+            json={"results": [{"3": True}], "metadata": {"next_page": ""}},
+            match_querystring=True,
+        )
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            refresh_token="1a2a3a",
+            secret=secret,
+            algorithm=algorithm,
+        )
+        res = resp.make_service_request_for_all_data(
+            "/api/v1/test", payload={}, method="GET", start_page=1, page_size=1
+        )
+        assert len(res) == 3
+
+    @responses.activate
+    def test_make_service_request_empty_if_metadata_missing(self):
+        responses.add(
+            responses.GET,
+            "https://localhost:8000/api/v1/test?page=1&page_size=1",
+            json={"results": [{"1": True}]},
+            match_querystring=True,
+        )
+
+        # should not be hit if meta data is missing.
+        responses.add(
+            responses.GET,
+            "https://localhost:8000/api/v1/test?page=2&page_size=1",
+            json={"results": [{"2": True}], "metadata": {"next_page": 3}},
+            match_querystring=True,
+        )
+
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = Request(
+            "https://localhost:8000",
+            access_token=access_token,
+            refresh_token="1a2a3a",
+            secret=secret,
+            algorithm=algorithm,
+        )
+        res = resp.make_service_request_for_all_data(
+            "/api/v1/test", payload={}, method="GET", start_page=1, page_size=1
+        )
+        assert len(res) == 1
