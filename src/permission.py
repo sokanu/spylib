@@ -10,6 +10,8 @@ def has_permission(jwt, uuid, permission, JWT_ALGORITHM, JWT_SECRET):
         services = decoded.get("services", None)
         if services is None:
             return False
+        if not services.get(uuid, None):
+            return False
         return permission in services[uuid]
     except (DecodeError, KeyError, Exception, ExpiredSignatureError) as e:
         raise e
