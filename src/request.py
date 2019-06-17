@@ -6,9 +6,9 @@ from jwt.exceptions import ExpiredSignatureError
 from six.moves.urllib.parse import urljoin
 
 
-class Request(object):
+class InternalServiceRequest(object):
     """
-    Contains methods for cross service requests.
+    Contains methods for making requests within the sokanu service network.
     """
 
     def __init__(

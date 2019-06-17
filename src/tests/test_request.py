@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from ..request import Request
+from ..request import InternalServiceRequest
 from ..exceptions import RefreshException, LoginException
 import datetime
 import json
@@ -8,7 +8,7 @@ import unittest
 import responses
 
 
-class TestRequest(unittest.TestCase):
+class TestInternalServiceRequest(unittest.TestCase):
     def test_init_with_good_access_token_success(self):
         """
         Given:
@@ -24,7 +24,7 @@ class TestRequest(unittest.TestCase):
         secret = "1234"
         algorithm = "HS256"
         access_token = jwt.encode({"test": "test"}, "1234", "HS256").decode("utf-8")
-        req = Request(
+        req = InternalServiceRequest(
             "localhost:8000",
             access_token=access_token,
             secret=secret,
@@ -51,7 +51,7 @@ class TestRequest(unittest.TestCase):
         secret = "1234"
         algorithm = "HS256"
         access_token = jwt.encode({}, secret, algorithm=algorithm).decode("utf-8")
-        req = Request(
+        req = InternalServiceRequest(
             "localhost:8000",
             access_token=access_token,
             algorithm=algorithm,
@@ -85,7 +85,7 @@ class TestRequest(unittest.TestCase):
             algorithm=algorithm,
         ).decode("utf-8")
         with self.assertRaises(RefreshException):
-            Request(
+            InternalServiceRequest(
                 "localhost:8000",
                 access_token=access_token,
                 algorithm=algorithm,
@@ -118,7 +118,7 @@ class TestRequest(unittest.TestCase):
             responses.POST, "https://localhost:8000/api/v1/tokens", status=500
         )
         with self.assertRaises(RefreshException):
-            Request(
+            InternalServiceRequest(
                 "https://localhost:8000",
                 access_token=access_token,
                 algorithm=algorithm,
@@ -147,7 +147,7 @@ class TestRequest(unittest.TestCase):
             status=201,
             body=json.dumps({"access_token": "1234"}),
         )
-        res = Request(
+        res = InternalServiceRequest(
             "https://localhost:8000",
             access_token=access_token,
             algorithm=algorithm,
@@ -170,7 +170,7 @@ class TestRequest(unittest.TestCase):
         """
         responses.add(responses.POST, "https://localhost:8000/api/v1/login", status=500)
         with self.assertRaises(LoginException):
-            Request("https://localhost:8000").login("fake", "fake")
+            InternalServiceRequest("https://localhost:8000").login("fake", "fake")
 
     @responses.activate
     def test_login_succeeds_when_server_201(self):
@@ -196,7 +196,7 @@ class TestRequest(unittest.TestCase):
             callback=request_callback,
             content_type="application/json",
         )
-        resp = Request("https://localhost:8000").login("fake", "fake")
+        resp = InternalServiceRequest("https://localhost:8000").login("fake", "fake")
 
         assert resp.get("access_token") == "5678"
         assert resp.get("refresh_token") == "1234"
@@ -231,7 +231,7 @@ class TestRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = Request(
+        resp = InternalServiceRequest(
             "https://localhost:8000",
             access_token=access_token,
             secret=secret,
@@ -270,7 +270,7 @@ class TestRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = Request(
+        resp = InternalServiceRequest(
             "https://localhost:8000",
             access_token=access_token,
             secret=secret,
@@ -300,7 +300,7 @@ class TestRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = Request(
+        resp = InternalServiceRequest(
             "https://localhost:8000",
             access_token=access_token,
             secret=secret,
@@ -354,7 +354,7 @@ class TestRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = Request(
+        resp = InternalServiceRequest(
             "https://localhost:8000",
             access_token=access_token,
             refresh_token="1a2a3a",
@@ -411,7 +411,7 @@ class TestRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = Request(
+        resp = InternalServiceRequest(
             "https://localhost:8000",
             access_token=access_token,
             refresh_token="1a2a3a",
@@ -442,7 +442,7 @@ class TestRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = Request(
+        resp = InternalServiceRequest(
             "https://localhost:8000",
             access_token=access_token,
             refresh_token="1a2a3a",
@@ -473,7 +473,7 @@ class TestRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = Request(
+        resp = InternalServiceRequest(
             "https://localhost:8000",
             access_token=access_token,
             refresh_token="1a2a3a",
