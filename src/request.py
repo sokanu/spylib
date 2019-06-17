@@ -12,17 +12,11 @@ class InternalServiceRequest(object):
     """
 
     def __init__(
-        self,
-        base_url,
-        access_token=None,
-        secret=None,
-        algorithm=None,
-        refresh_token=None,
+        self, access_token=None, secret=None, algorithm=None, refresh_token=None
     ):
         try:
             self.access_token = access_token
             self.refresh_token = refresh_token
-            self.base_url = base_url
             self.secret = secret
             self.algorithm = algorithm
 
@@ -33,13 +27,24 @@ class InternalServiceRequest(object):
         except (DecodeError, KeyError, Exception) as e:
             raise e
 
+    @staticmethod
+    def get_url(base_url, path):
+        return urljoin(base_url, path)
+
     def make_service_request(
-        self, path, method="GET", payload=None, timeout=2, retry=True, **kwargs
+        self,
+        base_url,
+        path,
+        method="GET",
+        payload=None,
+        timeout=2,
+        retry=True,
+        **kwargs
     ):
         headers = kwargs.get("headers", {})
         if self.access_token:
             headers.update({"Authorization": "Bearer %s" % self.access_token})
-        url = urljoin(self.base_url, path)
+        url = InternalServiceRequest.urljoin(base_url, path)
 
         if method == "GET":
             resp = get(url, params=payload, headers=headers, timeout=timeout, **kwargs)

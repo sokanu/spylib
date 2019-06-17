@@ -52,7 +52,6 @@ class TestInternalServiceRequest(unittest.TestCase):
         algorithm = "HS256"
         access_token = jwt.encode({}, secret, algorithm=algorithm).decode("utf-8")
         req = InternalServiceRequest(
-            "localhost:8000",
             access_token=access_token,
             algorithm=algorithm,
             secret=secret,
@@ -86,10 +85,7 @@ class TestInternalServiceRequest(unittest.TestCase):
         ).decode("utf-8")
         with self.assertRaises(RefreshException):
             InternalServiceRequest(
-                "localhost:8000",
-                access_token=access_token,
-                algorithm=algorithm,
-                secret=secret,
+                access_token=access_token, algorithm=algorithm, secret=secret
             )
 
     @responses.activate
@@ -119,10 +115,7 @@ class TestInternalServiceRequest(unittest.TestCase):
         )
         with self.assertRaises(RefreshException):
             InternalServiceRequest(
-                "https://localhost:8000",
-                access_token=access_token,
-                algorithm=algorithm,
-                secret=secret,
+                access_token=access_token, algorithm=algorithm, secret=secret
             )
 
     @responses.activate
@@ -148,7 +141,6 @@ class TestInternalServiceRequest(unittest.TestCase):
             body=json.dumps({"access_token": "1234"}),
         )
         res = InternalServiceRequest(
-            "https://localhost:8000",
             access_token=access_token,
             algorithm=algorithm,
             secret=secret,
