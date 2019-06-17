@@ -39,7 +39,7 @@ class InternalServiceRequest(object):
         method="GET",
         payload=None,
         timeout=2,
-        retry=True,
+        retry_count=0,
         **kwargs
     ):
         headers = kwargs.get("headers", {})
@@ -62,11 +62,15 @@ class InternalServiceRequest(object):
 
         UNKNOWN_SERVER_ERROR = 500
 
-        if retry and resp.status_code >= UNKNOWN_SERVER_ERROR:
+        if retry_count > 0 and resp.status_code >= UNKNOWN_SERVER_ERROR:
             return self.make_service_request(
-                path=path, method=method, payload=payload, timeout=timeout, retry=False
+                path=path,
+                method=method,
+                payload=payload,
+                timeout=timeout,
+                retry_count=retry_count - 1,
             )
-        elif resp.status_code == 401:
+        elif retry_count > 0 and resp.status_code == 401:
             try:
                 decode(self.access_token, self.secret, algorithms=[self.algorithm])
             except ExpiredSignatureError:
@@ -78,7 +82,7 @@ class InternalServiceRequest(object):
                     method=method,
                     payload=payload,
                     timeout=timeout,
-                    retry=False,
+                    retry_count=retry_count - 1,
                 )
         return resp
 
