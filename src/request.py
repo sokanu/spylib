@@ -4,7 +4,6 @@ from .exceptions import MethodException, LoginException, RefreshException
 from jwt import decode, DecodeError
 from jwt.exceptions import ExpiredSignatureError
 from six.moves.urllib.parse import urljoin
-from json import loads
 
 
 class Request(object):
@@ -33,39 +32,6 @@ class Request(object):
             self.access_token = self.refresh(refresh_token)
         except (DecodeError, KeyError, Exception) as e:
             raise e
-
-    def make_service_request_for_all_data(
-        self,
-        path,
-        method="GET",
-        payload={},
-        start_page=1,
-        page_size=100,
-        timeout=2,
-        **kwargs
-    ):
-        payload["page"] = start_page
-        payload["page_size"] = page_size
-        data = []
-        while payload["page"] is not None:
-            try:
-                response = self.make_service_request(
-                    path=path, payload=payload, method=method
-                )
-                if response.status_code >= 300:
-                    return data
-                response_content = loads(response.content)
-                if response_content.get("results"):
-                    data = data + response_content["results"]
-                if response_content.get("metadata") and response_content[
-                    "metadata"
-                ].get("next_page"):
-                    payload["page"] = response_content["metadata"]["next_page"]
-                else:
-                    payload["page"] = None
-            except Exception:
-                return data
-        return data
 
     def make_service_request(
         self, path, method="GET", payload=None, timeout=2, retry=True, **kwargs
@@ -109,8 +75,6 @@ class Request(object):
                     retry=False,
                 )
         return resp
-
-    # TODO: These should be hardcoded to auth sub-domain.
 
     def refresh(self, refresh_token):
         if not refresh_token:
