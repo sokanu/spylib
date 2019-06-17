@@ -126,3 +126,6 @@ class InternalServiceRequest(object):
         if access_token is None or refresh_token is None:
             raise LoginException
         return {"access_token": access_token, "refresh_token": refresh_token}
+
+    def get_tokens_dict(self):
+        return {"access_token": self.access_token, "refresh_token": self.refresh_token}
