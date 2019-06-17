@@ -13,7 +13,13 @@ class InternalServiceRequest(object):
     """
 
     def __init__(
-        self, access_token=None, secret=None, algorithm=None, refresh_token=None
+        self,
+        uuid,
+        api_key,
+        access_token=None,
+        secret=None,
+        algorithm=None,
+        refresh_token=None,
     ):
         try:
             self.access_token = access_token
@@ -24,9 +30,19 @@ class InternalServiceRequest(object):
             if self.access_token:
                 decode(access_token, secret, algorithms=[algorithm])
         except ExpiredSignatureError:
-            self.access_token = self.refresh(refresh_token)
+            try:
+                self.access_token = self.refresh(refresh_token)
+            except RefreshException:
+                login_dict = self.login(uuid, api_key)
+                self.access_token = login_dict.get("access_token")
+                self.refresh_token = login_dict.get("refresh_token")
         except (DecodeError, KeyError, Exception) as e:
             raise e
+        else:
+            if self.access_token is None:
+                login_dict = self.login(uuid, api_key)
+                self.access_token = login_dict.get("access_token")
+                self.refresh_token = login_dict.get("refresh_token")
 
     @staticmethod
     def get_url(base_url, path):
