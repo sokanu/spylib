@@ -4,6 +4,7 @@ from .exceptions import MethodException, LoginException, RefreshException
 from jwt import decode, DecodeError
 from jwt.exceptions import ExpiredSignatureError
 from six.moves.urllib.parse import urljoin
+import os
 
 
 class InternalServiceRequest(object):
@@ -82,11 +83,19 @@ class InternalServiceRequest(object):
         return resp
 
     def refresh(self, refresh_token):
+        base_url = os.environ.get("SPYLIB_AUTH_BASE_URL", None)
+        if not base_url:
+            raise Exception("SPYLIB_AUTH_BASE_URL must be set.")
         if not refresh_token:
             raise RefreshException
         cookies = {"refresh_token": refresh_token}
         resp = self.make_service_request(
-            path="/api/v1/tokens", method="POST", payload={}, timeout=2, cookies=cookies
+            base_url,
+            "/api/v1/tokens",
+            method="POST",
+            payload={},
+            timeout=2,
+            cookies=cookies,
         )
         if resp.status_code != 201:
             raise RefreshException
@@ -99,9 +108,17 @@ class InternalServiceRequest(object):
         """
         Login a user on auth, returns access_token and refresh_token.
         """
+        base_url = os.environ.get("SPYLIB_AUTH_BASE_URL", None)
+        if not base_url:
+            raise Exception("SPYLIB_AUTH_BASE_URL must be set.")
+
         resp = self.make_service_request(
-            "api/v1/login", method="POST", payload={"api_key": api_key, "uuid": uuid}
+            base_url,
+            "api/v1/login",
+            method="POST",
+            payload={"api_key": api_key, "uuid": uuid},
         )
+
         if resp.status_code != 200:
             raise LoginException("Auth service login failed")
         access_token = resp.json().get("access_token")
