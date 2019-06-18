@@ -1,10 +1,14 @@
+from __future__ import absolute_import
+import logging
+
+
 class LoginException(Exception):
-    pass
+    logging.debug("Login failed for an internal service request.")
 
 
 class RefreshException(Exception):
-    pass
+    logging.debug("Refresh of access token failed for an internal service request.")
 
 
-class MethodException(object):
-    pass
+class MethodException(Exception):
+    logging.debug("An invalid method was passed to the requests library.")

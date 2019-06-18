@@ -64,42 +64,6 @@ class TestInternalServiceRequest(unittest.TestCase):
         assert req.refresh_token == "billy"
 
     @responses.activate
-    def test_bad_access_token_no_refresh_token_throws_exception(self):
-        """
-        Given:
-            - a bad access token
-            - a secret
-            - an algorithm
-            - no refresh token.
-            - bad login server response
-        When:
-            - a request object is built.
-        Outcome:
-            - throws a LoginException
-        """
-        secret = "1234"
-        algorithm = "HS256"
-        access_token = jwt.encode(
-            {"exp": datetime.datetime.now() + datetime.timedelta(-30)},
-            secret,
-            algorithm=algorithm,
-        ).decode("utf-8")
-        responses.add(
-            responses.POST, "https://auth.localhost:8000/api/v1/tokens", status=500
-        )
-        responses.add(
-            responses.POST, "https://auth.localhost:8000/api/v1/login", status=500
-        )
-        with self.assertRaises(LoginException):
-            InternalServiceRequest(
-                uuid=str(uuid.uuid4()),
-                api_key="1234",
-                access_token=access_token,
-                algorithm=algorithm,
-                secret=secret,
-            )
-
-    @responses.activate
     def test_bad_access_no_refresh_token_server_throws_exception(self):
         """
         Given:
@@ -142,9 +106,12 @@ class TestInternalServiceRequest(unittest.TestCase):
         """
         Given:
             - an access token
-            - a mocked URL returning a 201.
+            - a mocked URL returning a 201 from the refresh token endpoint.
+            - a refresh token.
         When:
-            -
+            - Refresh token endpoint succeeds.
+        Outcome:
+            - the request object has the response from the mocked url.
         """
         secret = "1234"
         algorithm = "HS256"
@@ -174,12 +141,11 @@ class TestInternalServiceRequest(unittest.TestCase):
         """
         Given:
             - no tokens
-            - a bad response.
+            - a bad response from login.
         When:
-            - login called
+            - service object is created
         Outcome:
-            - LoginException raised.
-
+            - LoginException raised because the tokens dont exist, and login fallback fails.
         """
         responses.add(
             responses.POST, "https://auth.localhost:8000/api/v1/login", status=500
@@ -197,7 +163,6 @@ class TestInternalServiceRequest(unittest.TestCase):
             - login called
         Outcome:
             - LoginException raised.
-
         """
 
         def request_callback(request):
@@ -216,11 +181,11 @@ class TestInternalServiceRequest(unittest.TestCase):
         assert req.refresh_token == "1234"
 
     @responses.activate
-    def test_make_service_request_retries_successfully(self):
+    def test_make_service_request_doesnt_retry_on_unexpired_token(self):
         """
         Given:
-            - retry option is configured by default.
-            - a bad response that's a 500
+            - retry option is configured to retry once.
+            - a bad response from the test endpoint - that's a 500
         When:
             - a make service request is executed
         Outcome:
@@ -260,6 +225,69 @@ class TestInternalServiceRequest(unittest.TestCase):
             retry_count=1,
         )
         assert responses.calls.__len__() == 2
+
+    @responses.activate
+    def test_make_service_request_retries_successfully(self):
+        """
+        Given:
+            - retry option is configured to retry once.
+            - refresh token is provided.
+            - a bad response of 401 is configured on the mock response.
+            - override access token on initialized object, and provide a bad access token.
+        When:
+            - a make service request is executed
+        Outcome:
+            - expect a retry to occur twice.
+            - expect a refresh to be called once.
+        """
+
+        def request_callback(request):
+            resp_body = {}
+            headers = {"set-cookie": "refresh_token=1234;"}
+            return (401, headers, json.dumps(resp_body))
+
+        responses.add_callback(
+            responses.POST,
+            "https://auth.localhost:8000/api/v1/test",
+            callback=request_callback,
+            content_type="application/json",
+        )
+        responses.add(
+            responses.POST,
+            "https://auth.localhost:8000/api/v1/tokens",
+            status=201,
+            body=json.dumps({"access_token": "1234"}),
+        )
+
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp = InternalServiceRequest(
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
+            access_token=access_token,
+            secret=secret,
+            algorithm=algorithm,
+        )
+        # override access token with an 'old' one.
+        resp.access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(-30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        resp.refresh_token = "1234"
+        resp.make_service_request(
+            "https://auth.localhost:8000",
+            path="/api/v1/test",
+            method="POST",
+            payload={},
+            retry_count=1,
+        )
+        assert responses.calls.__len__() == 3
 
     @responses.activate
     def test_make_service_request_no_retr_succeeds(self):

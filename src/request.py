@@ -21,6 +21,11 @@ class InternalServiceRequest(object):
         algorithm=None,
         refresh_token=None,
     ):
+        """
+        Configures a InternalServiceRequest object for cross service requests.
+        Eagerly refreshes invalid access tokens.
+        Falls back on trying to log the entity in if access tokens are unavailable.
+        """
         try:
             self.access_token = access_token
             self.refresh_token = refresh_token
@@ -31,7 +36,7 @@ class InternalServiceRequest(object):
                 decode(access_token, secret, algorithms=[algorithm])
         except ExpiredSignatureError:
             try:
-                self.access_token = self.refresh(refresh_token)
+                self.access_token = self.refresh_access_token(refresh_token)
             except RefreshException:
                 login_dict = self.login(uuid, api_key)
                 self.access_token = login_dict.get("access_token")
@@ -58,6 +63,9 @@ class InternalServiceRequest(object):
         retry_count=0,
         **kwargs
     ):
+        """
+        Cross service communication request, with an optional retry mechanism.
+        """
         headers = kwargs.get("headers", {})
         if self.access_token:
             headers.update({"Authorization": "Bearer %s" % self.access_token})
@@ -93,7 +101,7 @@ class InternalServiceRequest(object):
             except ExpiredSignatureError:
                 if not self.refresh_token:
                     raise ExpiredSignatureError
-                self.access_token = self.refresh(self.refresh_token)
+                self.access_token = self.refresh_access_token(self.refresh_token)
                 return self.make_service_request(
                     base_url,
                     path=path,
@@ -104,7 +112,10 @@ class InternalServiceRequest(object):
                 )
         return resp
 
-    def refresh(self, refresh_token):
+    def refresh_access_token(self, refresh_token):
+        """
+        Exchanges a refresh token with auth, and returns the subsequent access token.
+        """
         base_url = os.environ.get("SPYLIB_AUTH_BASE_URL", None)
         if not base_url:
             raise Exception("SPYLIB_AUTH_BASE_URL must be set.")
