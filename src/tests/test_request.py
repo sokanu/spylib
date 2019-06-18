@@ -572,3 +572,53 @@ class TestInternalServiceRequest(unittest.TestCase):
             payload={"test": "test"},
         )
         assert res.status_code == 201
+
+    def test_get_tokens_dict(self):
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        req_obj = InternalServiceRequest(
+            "1234",
+            "4321",
+            access_token=access_token,
+            refresh_token="321",
+            secret=secret,
+            algorithm=algorithm,
+        )
+        token_dict = req_obj.get_tokens_dict()
+        assert token_dict.get("access_token") == access_token
+        assert token_dict.get("refresh_token") == "321"
+
+    def test_url_join_https(self):
+        assert (
+            InternalServiceRequest.urljoin(
+                "https://careerexplorer.com", "/api/v1/login"
+            )
+            == "https://careerexplorer.com/api/v1/login"
+        )
+
+    def test_url_join_https_no_leading_slash_on_path(self):
+        assert (
+            InternalServiceRequest.urljoin("https://careerexplorer.com", "api/v1/login")
+            == "https://careerexplorer.com/api/v1/login"
+        )
+
+    def test_url_join_https_leading_slash_on_both(self):
+        assert (
+            InternalServiceRequest.urljoin(
+                "https://careerexplorer.com/", "/api/v1/login"
+            )
+            == "https://careerexplorer.com/api/v1/login"
+        )
+
+    def test_url_join_local_base_url(self):
+        assert (
+            InternalServiceRequest.urljoin(
+                "https://socket-service.sokanu-dev1.local/", "/test"
+            )
+            == "https://socket-service.sokanu-dev1.local/test"
+        )
