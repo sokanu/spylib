@@ -11,6 +11,10 @@
 4. Be framework agnostic.
 5. Use the least number of dependencies as possible.
 
+## Consuming spylib
+
+Add the following to your requirements.txt file on its own line; and replace `va.b.c` with the SEMVER version of this library that you'd like to consume (e.g. `v0.0.1`)
+`-e git+https://github.com/sokanu/spylib.git@va.b.c#egg=spylib`
 
 ## Tests
 
@@ -19,6 +23,7 @@ Tests are run be unit test discovery. Please run the following command locally t
 ```
 python3 -m unittest
 ```
+
 
 ## Upgrading Packages
 - When upgrading `requirements.txt`, pleases also upgrade `setup.py` if the package will effect other applications that pull in spylib.
