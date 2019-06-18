@@ -7,9 +7,14 @@ import json
 import jwt
 import unittest
 import responses
+import os
 
 
 class TestInternalServiceRequest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        os.environ["SPYLIB_AUTH_BASE_URL"] = "https://auth.localhost:8000"
+
     def test_init_with_good_access_token_success(self):
         """
         Given:
