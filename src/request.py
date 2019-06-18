@@ -45,7 +45,7 @@ class InternalServiceRequest(object):
                 self.refresh_token = login_dict.get("refresh_token")
 
     @staticmethod
-    def get_url(base_url, path):
+    def urljoin(base_url, path):
         return urljoin(base_url, path)
 
     def make_service_request(
@@ -80,6 +80,7 @@ class InternalServiceRequest(object):
 
         if retry_count > 0 and resp.status_code >= UNKNOWN_SERVER_ERROR:
             return self.make_service_request(
+                base_url,
                 path=path,
                 method=method,
                 payload=payload,
@@ -94,6 +95,7 @@ class InternalServiceRequest(object):
                     raise ExpiredSignatureError
                 self.access_token = self.refresh(self.refresh_token)
                 return self.make_service_request(
+                    base_url,
                     path=path,
                     method=method,
                     payload=payload,
@@ -131,7 +133,6 @@ class InternalServiceRequest(object):
         base_url = os.environ.get("SPYLIB_AUTH_BASE_URL", None)
         if not base_url:
             raise Exception("SPYLIB_AUTH_BASE_URL must be set.")
-
         resp = self.make_service_request(
             base_url,
             "api/v1/login",

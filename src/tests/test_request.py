@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from ..request import InternalServiceRequest
-from ..exceptions import RefreshException, LoginException
+from ..exceptions import LoginException
+import uuid
 import datetime
 import json
 import jwt
@@ -25,15 +26,14 @@ class TestInternalServiceRequest(unittest.TestCase):
         algorithm = "HS256"
         access_token = jwt.encode({"test": "test"}, "1234", "HS256").decode("utf-8")
         req = InternalServiceRequest(
-            "localhost:8000",
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
             access_token=access_token,
             secret=secret,
             algorithm=algorithm,
         )
         assert req.access_token == access_token
-        assert req.base_url == "localhost:8000"
         assert req.secret
-        assert req.base_url
         assert req.refresh_token is None
 
     def test_init_with_good_access_and_refresh_token_success(self):
@@ -52,29 +52,30 @@ class TestInternalServiceRequest(unittest.TestCase):
         algorithm = "HS256"
         access_token = jwt.encode({}, secret, algorithm=algorithm).decode("utf-8")
         req = InternalServiceRequest(
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
             access_token=access_token,
             algorithm=algorithm,
             secret=secret,
             refresh_token="billy",
         )
         assert req.access_token == access_token
-        assert req.base_url == "localhost:8000"
         assert req.secret
-        assert req.base_url
         assert req.refresh_token == "billy"
 
+    @responses.activate
     def test_bad_access_token_no_refresh_token_throws_exception(self):
         """
         Given:
             - a bad access token
-            - a base url
             - a secret
             - an algorithm
             - no refresh token.
+            - bad login server response
         When:
             - a request object is built.
         Outcome:
-            - throws a RefreshException
+            - throws a LoginException
         """
         secret = "1234"
         algorithm = "HS256"
@@ -83,9 +84,19 @@ class TestInternalServiceRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        with self.assertRaises(RefreshException):
+        responses.add(
+            responses.POST, "https://auth.localhost:8000/api/v1/tokens", status=500
+        )
+        responses.add(
+            responses.POST, "https://auth.localhost:8000/api/v1/login", status=500
+        )
+        with self.assertRaises(LoginException):
             InternalServiceRequest(
-                access_token=access_token, algorithm=algorithm, secret=secret
+                uuid=str(uuid.uuid4()),
+                api_key="1234",
+                access_token=access_token,
+                algorithm=algorithm,
+                secret=secret,
             )
 
     @responses.activate
@@ -98,6 +109,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             - an algorithm
             - no refresh token.
             - a mocked refresh endpoint that fails.
+            - a mocked login endpoint that fails.
         When:
             - a request obj built and server fails with a non 200 status code.
         Outcome:
@@ -111,11 +123,18 @@ class TestInternalServiceRequest(unittest.TestCase):
             algorithm=algorithm,
         ).decode("utf-8")
         responses.add(
-            responses.POST, "https://localhost:8000/api/v1/tokens", status=500
+            responses.POST, "https://auth.localhost:8000/api/v1/tokens", status=500
         )
-        with self.assertRaises(RefreshException):
+        responses.add(
+            responses.POST, "https://auth.localhost:8000/api/v1/login", status=500
+        )
+        with self.assertRaises(LoginException):
             InternalServiceRequest(
-                access_token=access_token, algorithm=algorithm, secret=secret
+                uuid=str(uuid.uuid4()),
+                api_key="1234",
+                access_token=access_token,
+                algorithm=algorithm,
+                secret=secret,
             )
 
     @responses.activate
@@ -136,11 +155,13 @@ class TestInternalServiceRequest(unittest.TestCase):
         ).decode("utf-8")
         responses.add(
             responses.POST,
-            "https://localhost:8000/api/v1/tokens",
+            "https://auth.localhost:8000/api/v1/tokens",
             status=201,
             body=json.dumps({"access_token": "1234"}),
         )
         res = InternalServiceRequest(
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
             access_token=access_token,
             algorithm=algorithm,
             secret=secret,
@@ -160,9 +181,11 @@ class TestInternalServiceRequest(unittest.TestCase):
             - LoginException raised.
 
         """
-        responses.add(responses.POST, "https://localhost:8000/api/v1/login", status=500)
+        responses.add(
+            responses.POST, "https://auth.localhost:8000/api/v1/login", status=500
+        )
         with self.assertRaises(LoginException):
-            InternalServiceRequest("https://localhost:8000").login("fake", "fake")
+            InternalServiceRequest(uuid="fake", api_key="fake")
 
     @responses.activate
     def test_login_succeeds_when_server_201(self):
@@ -184,14 +207,13 @@ class TestInternalServiceRequest(unittest.TestCase):
 
         responses.add_callback(
             responses.POST,
-            "https://localhost:8000/api/v1/login",
+            "https://auth.localhost:8000/api/v1/login",
             callback=request_callback,
             content_type="application/json",
         )
-        resp = InternalServiceRequest("https://localhost:8000").login("fake", "fake")
-
-        assert resp.get("access_token") == "5678"
-        assert resp.get("refresh_token") == "1234"
+        req = InternalServiceRequest(uuid="fake", api_key="fake")
+        assert req.access_token == "5678"
+        assert req.refresh_token == "1234"
 
     @responses.activate
     def test_make_service_request_retries_successfully(self):
@@ -212,7 +234,7 @@ class TestInternalServiceRequest(unittest.TestCase):
 
         responses.add_callback(
             responses.POST,
-            "https://localhost:8000/api/v1/test",
+            "https://auth.localhost:8000/api/v1/test",
             callback=request_callback,
             content_type="application/json",
         )
@@ -224,12 +246,19 @@ class TestInternalServiceRequest(unittest.TestCase):
             algorithm=algorithm,
         ).decode("utf-8")
         resp = InternalServiceRequest(
-            "https://localhost:8000",
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
             access_token=access_token,
             secret=secret,
             algorithm=algorithm,
         )
-        resp.make_service_request(path="/api/v1/test", method="POST", payload={})
+        resp.make_service_request(
+            "https://auth.localhost:8000",
+            path="/api/v1/test",
+            method="POST",
+            payload={},
+            retry_count=1,
+        )
         assert responses.calls.__len__() == 2
 
     @responses.activate
@@ -251,7 +280,7 @@ class TestInternalServiceRequest(unittest.TestCase):
 
         responses.add_callback(
             responses.POST,
-            "https://localhost:8000/api/v1/test",
+            "https://auth.localhost:8000/api/v1/test",
             callback=request_callback,
             content_type="application/json",
         )
@@ -263,13 +292,18 @@ class TestInternalServiceRequest(unittest.TestCase):
             algorithm=algorithm,
         ).decode("utf-8")
         resp = InternalServiceRequest(
-            "https://localhost:8000",
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
             access_token=access_token,
             secret=secret,
             algorithm=algorithm,
         )
         resp.make_service_request(
-            path="/api/v1/test", method="POST", retry=False, payload={}
+            "https://auth.localhost:8000",
+            path="/api/v1/test",
+            method="POST",
+            retry_count=0,
+            payload={},
         )
         assert responses.calls.__len__() == 1
 
@@ -293,7 +327,8 @@ class TestInternalServiceRequest(unittest.TestCase):
             algorithm=algorithm,
         ).decode("utf-8")
         resp = InternalServiceRequest(
-            "https://localhost:8000",
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
             access_token=access_token,
             secret=secret,
             algorithm=algorithm,
@@ -307,23 +342,30 @@ class TestInternalServiceRequest(unittest.TestCase):
 
         # order here matters. matching urls will be hit in the order declared.
         responses.add(
-            responses.GET, "https://localhost:8000/api/v1/test", status=401, json={}
+            responses.GET,
+            "https://auth.localhost:8000/api/v1/test",
+            status=401,
+            json={},
         )
         responses.add(
             responses.GET,
-            "https://localhost:8000/api/v1/test",
+            "https://auth.localhost:8000/api/v1/test",
             status=200,
             json={"is_hit": True},
         )
         responses.add(
             responses.POST,
-            "https://localhost:8000/api/v1/tokens",
+            "https://auth.localhost:8000/api/v1/tokens",
             status=201,
             json={"access_token": "1234"},
         )
         with self.assertRaises(jwt.ExpiredSignatureError):
             resp.make_service_request(
-                path="/api/v1/test", method="GET", retry=True, payload={}
+                "https://auth.localhost:8000",
+                path="/api/v1/test",
+                method="GET",
+                retry_count=1,
+                payload={},
             )
 
     @responses.activate
@@ -347,7 +389,8 @@ class TestInternalServiceRequest(unittest.TestCase):
             algorithm=algorithm,
         ).decode("utf-8")
         resp = InternalServiceRequest(
-            "https://localhost:8000",
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
             access_token=access_token,
             refresh_token="1a2a3a",
             secret=secret,
@@ -362,23 +405,30 @@ class TestInternalServiceRequest(unittest.TestCase):
 
         # order here matters. matching urls will be hit in the order declared.
         responses.add(
-            responses.GET, "https://localhost:8000/api/v1/test", status=401, json={}
+            responses.GET,
+            "https://auth.localhost:8000/api/v1/test",
+            status=401,
+            json={},
         )
         responses.add(
             responses.GET,
-            "https://localhost:8000/api/v1/test",
+            "https://auth.localhost:8000/api/v1/test",
             status=200,
             json={"is_hit": True},
         )
         responses.add(
             responses.POST,
-            "https://localhost:8000/api/v1/tokens",
+            "https://auth.localhost:8000/api/v1/tokens",
             status=201,
             json={"access_token": "1234"},
         )
 
         res = resp.make_service_request(
-            path="/api/v1/test", method="GET", retry=True, payload={}
+            "https://auth.localhost:8000",
+            path="/api/v1/test",
+            method="GET",
+            retry_count=1,
+            payload={},
         )
         assert res.json().get("is_hit", False)
 
@@ -394,7 +444,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             - a 200 is returned
         """
         responses.add(
-            responses.DELETE, "https://localhost:8000/api/v1/test", status=200
+            responses.DELETE, "https://auth.localhost:8000/api/v1/test", status=200
         )
         secret = "1234"
         algorithm = "HS256"
@@ -404,14 +454,18 @@ class TestInternalServiceRequest(unittest.TestCase):
             algorithm=algorithm,
         ).decode("utf-8")
         resp = InternalServiceRequest(
-            "https://localhost:8000",
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
             access_token=access_token,
             refresh_token="1a2a3a",
             secret=secret,
             algorithm=algorithm,
         )
         res = resp.make_service_request(
-            path="/api/v1/test", method="DELETE", retry=False
+            "https://auth.localhost:8000",
+            path="/api/v1/test",
+            method="DELETE",
+            retry_count=0,
         )
         assert res.status_code == 200
 
@@ -426,7 +480,9 @@ class TestInternalServiceRequest(unittest.TestCase):
         Outcome:
             - a 200 is returned
         """
-        responses.add(responses.PATCH, "https://localhost:8000/api/v1/test", status=200)
+        responses.add(
+            responses.PATCH, "https://auth.localhost:8000/api/v1/test", status=200
+        )
         secret = "1234"
         algorithm = "HS256"
         access_token = jwt.encode(
@@ -435,14 +491,19 @@ class TestInternalServiceRequest(unittest.TestCase):
             algorithm=algorithm,
         ).decode("utf-8")
         resp = InternalServiceRequest(
-            "https://localhost:8000",
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
             access_token=access_token,
             refresh_token="1a2a3a",
             secret=secret,
             algorithm=algorithm,
         )
         res = resp.make_service_request(
-            path="/api/v1/test", method="PATCH", retry=False, payload={"test": "test"}
+            "https://auth.localhost:8000",
+            path="/api/v1/test",
+            method="PATCH",
+            retry_count=0,
+            payload={"test": "test"},
         )
         assert res.status_code == 200
 
@@ -457,7 +518,9 @@ class TestInternalServiceRequest(unittest.TestCase):
         Outcome:
             - a 200 is returned
         """
-        responses.add(responses.PUT, "https://localhost:8000/api/v1/test", status=201)
+        responses.add(
+            responses.PUT, "https://auth.localhost:8000/api/v1/test", status=201
+        )
         secret = "1234"
         algorithm = "HS256"
         access_token = jwt.encode(
@@ -466,13 +529,18 @@ class TestInternalServiceRequest(unittest.TestCase):
             algorithm=algorithm,
         ).decode("utf-8")
         resp = InternalServiceRequest(
-            "https://localhost:8000",
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
             access_token=access_token,
             refresh_token="1a2a3a",
             secret=secret,
             algorithm=algorithm,
         )
         res = resp.make_service_request(
-            path="/api/v1/test", method="PUT", retry=False, payload={"test": "test"}
+            "https://auth.localhost:8000",
+            "/api/v1/test",
+            method="PUT",
+            retry_count=0,
+            payload={"test": "test"},
         )
         assert res.status_code == 201
