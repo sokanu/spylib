@@ -6,4 +6,5 @@ setup(
     version="0.0dev",
     packages=["src"],
     long_description=open("README.md").read(),
+    install_requires=["requests>=2.22.0", "PyJWT>=1.7.1"],
 )
