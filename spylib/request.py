@@ -165,7 +165,7 @@ class ServiceRequestFactory(object):
         return self.make_service_request(
             base_url,
             path=path,
-            method="DELETE",
+            method="PUT",
             payload=payload,
             timeout=timeout,
             retry_count=retry_count - 1,
