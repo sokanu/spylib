@@ -59,6 +59,7 @@ class ServiceRequestFactory(Observable):
         Eagerly refreshes invalid access tokens.
         Falls back on trying to log the entity in if access tokens are unavailable.
         """
+        super().__init__()
         try:
             self.access_token = access_token
             self.refresh_token = refresh_token
@@ -171,7 +172,7 @@ class ServiceRequestFactory(Observable):
         access_token = resp.json().get("access_token")
         if not access_token:
             raise RefreshException
-        self.set_access_token(access_token)
+        self._set_access_token(access_token)
 
     def login(self, uuid, api_key):
         """

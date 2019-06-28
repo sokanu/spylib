@@ -1,4 +1,4 @@
 name = "spylib"
-from .request import InternalServiceRequest
+from .request import ServiceRequestFactory
 from .permission import has_permission
 from .exceptions import LoginException, RefreshException, MethodException
