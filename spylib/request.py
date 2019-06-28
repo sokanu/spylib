@@ -7,7 +7,40 @@ from six.moves.urllib.parse import urljoin
 import os
 
 
-class ServiceRequestFactory(object):
+class Observable:
+    """
+    The observable class that tracks observers, and notifies them when a change occurs.
+    """
+
+    def __init__(self):
+        self._observers = []
+
+    def register_observer(self, observer):
+        self._observers.append(observer)
+
+    def notify_observers(self, *args, **kwargs):
+        for obs in self._observers:
+            obs.notify(self, *args, **kwargs)
+
+
+class Observer:
+    """
+    An observer that must be implemented by the consumer.
+    The observables within ServiceRequestFactory will call `notify` of the observer.
+    """
+
+    def __init__(self, observable):
+        observable.register_observer(self)
+
+    def notify(self, observable, *args, **kwargs):
+        """
+        Notify is a method that is triggered on an observer, when an observable changes.
+        The `observable` is a type of object that inherits the `Observable` type. For this libraries purpose, ServiceRequestFactory inherits from `Observable` type.
+        """
+        raise NotImplementedError
+
+
+class ServiceRequestFactory(Observable):
     """
     Contains methods for making requests within the sokanu service network.
     """
@@ -31,23 +64,26 @@ class ServiceRequestFactory(object):
             self.refresh_token = refresh_token
             self.secret = secret
             self.algorithm = algorithm
-
             if self.access_token:
                 decode(access_token, secret, algorithms=[algorithm])
         except ExpiredSignatureError:
             try:
-                self.access_token = self.refresh_access_token(refresh_token)
+                self.refresh_access_token(refresh_token)
             except RefreshException:
-                login_dict = self.login(uuid, api_key)
-                self.access_token = login_dict.get("access_token")
-                self.refresh_token = login_dict.get("refresh_token")
+                self.login(uuid, api_key)
         except (DecodeError, KeyError, Exception) as e:
             raise e
         else:
             if self.access_token is None:
-                login_dict = self.login(uuid, api_key)
-                self.access_token = login_dict.get("access_token")
-                self.refresh_token = login_dict.get("refresh_token")
+                self.login(uuid, api_key)
+
+    def _set_access_token(self, access_token):
+        self.access_token = access_token
+        self.notify_observers()
+
+    def _set_refresh_token(self, refresh_token):
+        self.refresh_token = refresh_token
+        self.notify_observers()
 
     @staticmethod
     def urljoin(base_url, path):
@@ -135,7 +171,7 @@ class ServiceRequestFactory(object):
         access_token = resp.json().get("access_token")
         if not access_token:
             raise RefreshException
-        return access_token
+        self.set_access_token(access_token)
 
     def login(self, uuid, api_key):
         """
@@ -157,7 +193,8 @@ class ServiceRequestFactory(object):
         refresh_token = resp.cookies["refresh_token"]
         if access_token is None or refresh_token is None:
             raise LoginException
-        return {"access_token": access_token, "refresh_token": refresh_token}
+        self._set_access_token(access_token)
+        self._set_refresh_token(refresh_token)
 
     def get_tokens_dict(self):
         return {"access_token": self.access_token, "refresh_token": self.refresh_token}
