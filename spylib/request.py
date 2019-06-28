@@ -7,7 +7,7 @@ from six.moves.urllib.parse import urljoin
 import os
 
 
-class InternalServiceRequest(object):
+class ServiceRequestFactory(object):
     """
     Contains methods for making requests within the sokanu service network.
     """
@@ -22,7 +22,7 @@ class InternalServiceRequest(object):
         refresh_token=None,
     ):
         """
-        Configures a InternalServiceRequest object for cross service requests.
+        Configures a ServiceRequestFactory object for cross service requests.
         Eagerly refreshes invalid access tokens.
         Falls back on trying to log the entity in if access tokens are unavailable.
         """
@@ -69,7 +69,7 @@ class InternalServiceRequest(object):
         headers = kwargs.get("headers", {})
         if self.access_token:
             headers.update({"Authorization": "Bearer %s" % self.access_token})
-        url = InternalServiceRequest.urljoin(base_url, path)
+        url = ServiceRequestFactory.urljoin(base_url, path)
 
         if method == "GET":
             resp = get(url, params=payload, headers=headers, timeout=timeout, **kwargs)
