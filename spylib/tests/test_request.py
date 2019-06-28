@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from ..request import InternalServiceRequest
+from ..request import ServiceRequestFactory
 from ..exceptions import LoginException
 import uuid
 import datetime
@@ -10,7 +10,7 @@ import responses
 import os
 
 
-class TestInternalServiceRequest(unittest.TestCase):
+class TestServiceRequestFactory(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         os.environ["SPYLIB_AUTH_BASE_URL"] = "https://auth.localhost:8000"
@@ -30,7 +30,7 @@ class TestInternalServiceRequest(unittest.TestCase):
         secret = "1234"
         algorithm = "HS256"
         access_token = jwt.encode({"test": "test"}, "1234", "HS256").decode("utf-8")
-        req = InternalServiceRequest(
+        req = ServiceRequestFactory(
             uuid=str(uuid.uuid4()),
             api_key="1234",
             access_token=access_token,
@@ -56,7 +56,7 @@ class TestInternalServiceRequest(unittest.TestCase):
         secret = "1234"
         algorithm = "HS256"
         access_token = jwt.encode({}, secret, algorithm=algorithm).decode("utf-8")
-        req = InternalServiceRequest(
+        req = ServiceRequestFactory(
             uuid=str(uuid.uuid4()),
             api_key="1234",
             access_token=access_token,
@@ -98,7 +98,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             responses.POST, "https://auth.localhost:8000/api/v1/login", status=500
         )
         with self.assertRaises(LoginException):
-            InternalServiceRequest(
+            ServiceRequestFactory(
                 uuid=str(uuid.uuid4()),
                 api_key="1234",
                 access_token=access_token,
@@ -131,7 +131,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             status=201,
             body=json.dumps({"access_token": "1234"}),
         )
-        res = InternalServiceRequest(
+        res = ServiceRequestFactory(
             uuid=str(uuid.uuid4()),
             api_key="1234",
             access_token=access_token,
@@ -156,7 +156,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             responses.POST, "https://auth.localhost:8000/api/v1/login", status=500
         )
         with self.assertRaises(LoginException):
-            InternalServiceRequest(uuid="fake", api_key="fake")
+            ServiceRequestFactory(uuid="fake", api_key="fake")
 
     @responses.activate
     def test_login_succeeds_when_server_201(self):
@@ -181,7 +181,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             callback=request_callback,
             content_type="application/json",
         )
-        req = InternalServiceRequest(uuid="fake", api_key="fake")
+        req = ServiceRequestFactory(uuid="fake", api_key="fake")
         assert req.access_token == "5678"
         assert req.refresh_token == "1234"
 
@@ -215,7 +215,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = InternalServiceRequest(
+        resp = ServiceRequestFactory(
             uuid=str(uuid.uuid4()),
             api_key="1234",
             access_token=access_token,
@@ -271,7 +271,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = InternalServiceRequest(
+        resp = ServiceRequestFactory(
             uuid=str(uuid.uuid4()),
             api_key="1234",
             access_token=access_token,
@@ -324,7 +324,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = InternalServiceRequest(
+        resp = ServiceRequestFactory(
             uuid=str(uuid.uuid4()),
             api_key="1234",
             access_token=access_token,
@@ -359,7 +359,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = InternalServiceRequest(
+        resp = ServiceRequestFactory(
             uuid=str(uuid.uuid4()),
             api_key="1234",
             access_token=access_token,
@@ -421,7 +421,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = InternalServiceRequest(
+        resp = ServiceRequestFactory(
             uuid=str(uuid.uuid4()),
             api_key="1234",
             access_token=access_token,
@@ -486,7 +486,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = InternalServiceRequest(
+        resp = ServiceRequestFactory(
             uuid=str(uuid.uuid4()),
             api_key="1234",
             access_token=access_token,
@@ -523,7 +523,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = InternalServiceRequest(
+        resp = ServiceRequestFactory(
             uuid=str(uuid.uuid4()),
             api_key="1234",
             access_token=access_token,
@@ -561,7 +561,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        resp = InternalServiceRequest(
+        resp = ServiceRequestFactory(
             uuid=str(uuid.uuid4()),
             api_key="1234",
             access_token=access_token,
@@ -586,7 +586,7 @@ class TestInternalServiceRequest(unittest.TestCase):
             secret,
             algorithm=algorithm,
         ).decode("utf-8")
-        req_obj = InternalServiceRequest(
+        req_obj = ServiceRequestFactory(
             "1234",
             "4321",
             access_token=access_token,
@@ -600,21 +600,19 @@ class TestInternalServiceRequest(unittest.TestCase):
 
     def test_url_join_https(self):
         assert (
-            InternalServiceRequest.urljoin(
-                "https://careerexplorer.com", "/api/v1/login"
-            )
+            ServiceRequestFactory.urljoin("https://careerexplorer.com", "/api/v1/login")
             == "https://careerexplorer.com/api/v1/login"
         )
 
     def test_url_join_https_no_leading_slash_on_path(self):
         assert (
-            InternalServiceRequest.urljoin("https://careerexplorer.com", "api/v1/login")
+            ServiceRequestFactory.urljoin("https://careerexplorer.com", "api/v1/login")
             == "https://careerexplorer.com/api/v1/login"
         )
 
     def test_url_join_https_leading_slash_on_both(self):
         assert (
-            InternalServiceRequest.urljoin(
+            ServiceRequestFactory.urljoin(
                 "https://careerexplorer.com/", "/api/v1/login"
             )
             == "https://careerexplorer.com/api/v1/login"
@@ -622,7 +620,7 @@ class TestInternalServiceRequest(unittest.TestCase):
 
     def test_url_join_local_base_url(self):
         assert (
-            InternalServiceRequest.urljoin(
+            ServiceRequestFactory.urljoin(
                 "https://socket-service.sokanu-dev1.local/", "/test"
             )
             == "https://socket-service.sokanu-dev1.local/test"
