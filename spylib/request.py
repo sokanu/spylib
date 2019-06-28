@@ -27,6 +27,8 @@ class ServiceRequestFactory(object):
         Falls back on trying to log the entity in if access tokens are unavailable.
         """
         try:
+            self.uuid = uuid
+            self.api_key = api_key
             self.access_token = access_token
             self.refresh_token = refresh_token
             self.secret = secret
@@ -100,8 +102,12 @@ class ServiceRequestFactory(object):
                 decode(self.access_token, self.secret, algorithms=[self.algorithm])
             except ExpiredSignatureError:
                 if not self.refresh_token:
-                    raise ExpiredSignatureError
-                self.access_token = self.refresh_access_token(self.refresh_token)
+                    try:
+                        self.login(self.uuid, self.api_key)
+                    except LoginException:
+                        raise LoginException
+                else:
+                    self.access_token = self.refresh_access_token(self.refresh_token)
                 return self.make_service_request(
                     base_url,
                     path=path,
