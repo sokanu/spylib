@@ -61,6 +61,8 @@ class ServiceRequestFactory(Observable):
     ):
         super().__init__()
         try:
+            self.uuid = uuid
+            self.api_key = api_key
             self.access_token = access_token
             self.refresh_token = refresh_token
             self.secret = secret
