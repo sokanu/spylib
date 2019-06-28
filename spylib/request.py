@@ -25,8 +25,8 @@ class Observable:
 
 class Observer:
     """
-    An observer that must be implemented by the consumer.
-    The observables within ServiceRequestFactory will call `notify` of the observer.
+    An observer that can be implemented by the consumer in order to ease tracking of changes of access and refresh tokens.
+    The observables within ServiceRequestFactory will call `notify` on classes that inherit Observer and implement `notify`.
     """
 
     def __init__(self, observable):
@@ -42,7 +42,12 @@ class Observer:
 
 class ServiceRequestFactory(Observable):
     """
-    Contains methods for making requests within the sokanu service network.
+    A service request factory is an object that is used across our microservices for cross service requests.
+
+    When creating a new instance of the factory, ServiceRequestFactory will eagerly refresh your access token, provided a valid refresh token.
+    The factory requires a UUID and API_KEY when being used, as this will act as a fallback in the event your provided tokens fail.
+    Storing tokens, and providing configuration is the consumers responsibility when using this library. Fortunately, there are some features provided with spylib that will make this easier.
+    When implementing your cross service request, please consider establishing a class that consumes our `Observer` class with a notify functionality. When tokens change in your instance, the observer class will be notified of these changes.
     """
 
     def __init__(
@@ -54,11 +59,6 @@ class ServiceRequestFactory(Observable):
         algorithm=None,
         refresh_token=None,
     ):
-        """
-        Configures a ServiceRequestFactory object for cross service requests.
-        Eagerly refreshes invalid access tokens.
-        Falls back on trying to log the entity in if access tokens are unavailable.
-        """
         super().__init__()
         try:
             self.access_token = access_token
