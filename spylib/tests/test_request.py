@@ -350,7 +350,7 @@ class TestServiceRequestFactory(unittest.TestCase):
         When:
             - a make service request is executed
         Outcome:
-            - ExpiredSignatureError occurs since no new token can be obtained.
+            - LoginError occurs since no token can be obtained upon the login fallback.
         """
         secret = "1234"
         algorithm = "HS256"
@@ -392,7 +392,10 @@ class TestServiceRequestFactory(unittest.TestCase):
             status=201,
             json={"access_token": "1234"},
         )
-        with self.assertRaises(jwt.ExpiredSignatureError):
+        responses.add(
+            responses.POST, "https://auth.localhost:8000/api/v1/login", status=500
+        )
+        with self.assertRaises(LoginException):
             resp.make_service_request(
                 "https://auth.localhost:8000",
                 path="/api/v1/test",
