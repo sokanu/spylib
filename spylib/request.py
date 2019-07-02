@@ -8,7 +8,7 @@ from six.moves.urllib.parse import urljoin
 import os
 
 
-class Observable:
+class Observable(object):
     """
     The observable class that tracks observers, and notifies them when a change occurs.
     """
@@ -24,7 +24,7 @@ class Observable:
             obs.notify(self, *args, **kwargs)
 
 
-class Observer:
+class Observer(object):
     """
     An observer that can be implemented by the consumer in order to ease tracking of changes of access and refresh tokens.
     The observables within ServiceRequestFactory will call `notify` on classes that inherit Observer and implement `notify`.
