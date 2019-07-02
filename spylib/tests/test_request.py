@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from ..request import ServiceRequestFactory
+from ..request import ServiceRequestFactory, Observer
 from ..exceptions import LoginException
 import uuid
 import datetime
@@ -628,3 +628,55 @@ class TestServiceRequestFactory(unittest.TestCase):
             )
             == "https://socket-service.sokanu-dev1.local/test"
         )
+
+    @responses.activate
+    def test_observerable_triggers_observer_notify(self):
+        """
+        Given a login that gives you a new access/refresh token, and a implemented observer pattern.
+        Expect that the observer is notified that the access and refresh token were changed.
+        """
+        secret = "1234"
+        algorithm = "HS256"
+        access_token = jwt.encode(
+            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
+            secret,
+            algorithm=algorithm,
+        ).decode("utf-8")
+        factory_instance = ServiceRequestFactory(
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
+            access_token=access_token,
+            refresh_token="1a2a3a",
+            secret=secret,
+            algorithm=algorithm,
+        )
+
+        def request_callback(request):
+            resp_body = {"access_token": "5678"}
+            headers = {"set-cookie": "refresh_token=1234;"}
+            return (200, headers, json.dumps(resp_body))
+
+        responses.add_callback(
+            responses.POST,
+            "https://auth.localhost:8000/api/v1/login",
+            callback=request_callback,
+            content_type="application/json",
+        )
+
+        class AnObserver(Observer):
+            access_token_modify = False
+            refresh_token_modify = False
+
+            def __init__(self, observable):
+                super().__init__(observable)
+
+            def notify(self, observable, *args, **kwargs):
+                if str(observable.refresh_token) == str(1234):
+                    self.refresh_token_modify = True
+                if str(observable.access_token) == str(5678):
+                    self.access_token_modify = True
+
+        observer_instance = AnObserver(factory_instance)
+        factory_instance.login(factory_instance.uuid, factory_instance.api_key)
+        assert observer_instance.access_token_modify
+        assert observer_instance.refresh_token_modify

@@ -7,9 +7,47 @@ from six.moves.urllib.parse import urljoin
 import os
 
 
-class ServiceRequestFactory(object):
+class Observable:
     """
-    Contains methods for making requests within the sokanu service network.
+    The observable class that tracks observers, and notifies them when a change occurs.
+    """
+
+    def __init__(self):
+        self._observers = []
+
+    def register_observer(self, observer):
+        self._observers.append(observer)
+
+    def notify_observers(self, *args, **kwargs):
+        for obs in self._observers:
+            obs.notify(self, *args, **kwargs)
+
+
+class Observer:
+    """
+    An observer that can be implemented by the consumer in order to ease tracking of changes of access and refresh tokens.
+    The observables within ServiceRequestFactory will call `notify` on classes that inherit Observer and implement `notify`.
+    """
+
+    def __init__(self, observable):
+        observable.register_observer(self)
+
+    def notify(self, observable, *args, **kwargs):
+        """
+        Notify is a method that is triggered on an observer, when an observable changes.
+        The `observable` is a type of object that inherits the `Observable` type. For this libraries purpose, ServiceRequestFactory inherits from `Observable` type.
+        """
+        raise NotImplementedError
+
+
+class ServiceRequestFactory(Observable):
+    """
+    A service request factory is an object that is used across our microservices for cross service requests.
+
+    When creating a new instance of the factory, ServiceRequestFactory will eagerly refresh your access token, provided a valid refresh token.
+    The factory requires a UUID and API_KEY when being used, as this will act as a fallback in the event your provided tokens fail.
+    Storing tokens, and providing configuration is the consumers responsibility when using this library. Fortunately, there are some features provided with spylib that will make this easier.
+    When implementing your cross service request, please consider establishing a class that consumes our `Observer` class with a notify functionality. When tokens change in your instance, the observer class will be notified of these changes.
     """
 
     def __init__(
@@ -21,11 +59,7 @@ class ServiceRequestFactory(object):
         algorithm=None,
         refresh_token=None,
     ):
-        """
-        Configures a ServiceRequestFactory object for cross service requests.
-        Eagerly refreshes invalid access tokens.
-        Falls back on trying to log the entity in if access tokens are unavailable.
-        """
+        super().__init__()
         try:
             self.uuid = uuid
             self.api_key = api_key
@@ -33,23 +67,26 @@ class ServiceRequestFactory(object):
             self.refresh_token = refresh_token
             self.secret = secret
             self.algorithm = algorithm
-
             if self.access_token:
                 decode(access_token, secret, algorithms=[algorithm])
         except ExpiredSignatureError:
             try:
-                self.access_token = self.refresh_access_token(refresh_token)
+                self.refresh_access_token(refresh_token)
             except RefreshException:
-                login_dict = self.login(uuid, api_key)
-                self.access_token = login_dict.get("access_token")
-                self.refresh_token = login_dict.get("refresh_token")
+                self.login(uuid, api_key)
         except (DecodeError, KeyError, Exception) as e:
             raise e
         else:
             if self.access_token is None:
-                login_dict = self.login(uuid, api_key)
-                self.access_token = login_dict.get("access_token")
-                self.refresh_token = login_dict.get("refresh_token")
+                self.login(uuid, api_key)
+
+    def _set_access_token(self, access_token):
+        self.access_token = access_token
+        self.notify_observers()
+
+    def _set_refresh_token(self, refresh_token):
+        self.refresh_token = refresh_token
+        self.notify_observers()
 
     @staticmethod
     def urljoin(base_url, path):
@@ -141,7 +178,7 @@ class ServiceRequestFactory(object):
         access_token = resp.json().get("access_token")
         if not access_token:
             raise RefreshException
-        return access_token
+        self._set_access_token(access_token)
 
     def login(self, uuid, api_key):
         """
@@ -163,7 +200,8 @@ class ServiceRequestFactory(object):
         refresh_token = resp.cookies["refresh_token"]
         if access_token is None or refresh_token is None:
             raise LoginException
-        return {"access_token": access_token, "refresh_token": refresh_token}
+        self._set_access_token(access_token)
+        self._set_refresh_token(refresh_token)
 
     def get_tokens_dict(self):
         return {"access_token": self.access_token, "refresh_token": self.refresh_token}
