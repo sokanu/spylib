@@ -124,7 +124,7 @@ class ServiceRequestFactory(object):
             path=path,
             method="DELETE",
             timeout=timeout,
-            retry_count=retry_count - 1,
+            retry_count=retry_count,
             **kwargs
         )
 
@@ -135,7 +135,7 @@ class ServiceRequestFactory(object):
             method="GET",
             payload=payload,
             timeout=timeout,
-            retry_count=retry_count - 1,
+            retry_count=retry_count,
             **kwargs
         )
 
@@ -146,7 +146,7 @@ class ServiceRequestFactory(object):
             method="POST",
             payload=payload,
             timeout=timeout,
-            retry_count=retry_count - 1,
+            retry_count=retry_count,
             **kwargs
         )
 
@@ -157,7 +157,7 @@ class ServiceRequestFactory(object):
             method="PATCH",
             payload=payload,
             timeout=timeout,
-            retry_count=retry_count - 1,
+            retry_count=retry_count,
             **kwargs
         )
 
@@ -168,7 +168,7 @@ class ServiceRequestFactory(object):
             method="PUT",
             payload=payload,
             timeout=timeout,
-            retry_count=retry_count - 1,
+            retry_count=retry_count,
             **kwargs
         )
 
