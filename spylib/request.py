@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from builtins import super
 from requests import get, delete, post, patch, put
 from .exceptions import MethodException, LoginException, RefreshException
 from jwt import decode, DecodeError
