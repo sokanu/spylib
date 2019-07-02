@@ -155,6 +155,60 @@ class ServiceRequestFactory(Observable):
                 )
         return resp
 
+    def delete(self, base_url, path, timeout, retry_count, **kwargs):
+        return self.make_service_request(
+            base_url,
+            path=path,
+            method="DELETE",
+            timeout=timeout,
+            retry_count=retry_count,
+            **kwargs
+        )
+
+    def get(self, base_url, path, payload, timeout, retry_count, **kwargs):
+        return self.make_service_request(
+            base_url,
+            path=path,
+            method="GET",
+            payload=payload,
+            timeout=timeout,
+            retry_count=retry_count,
+            **kwargs
+        )
+
+    def post(self, base_url, path, payload, timeout, retry_count, **kwargs):
+        return self.make_service_request(
+            base_url,
+            path=path,
+            method="POST",
+            payload=payload,
+            timeout=timeout,
+            retry_count=retry_count,
+            **kwargs
+        )
+
+    def patch(self, base_url, path, payload, timeout, retry_count, **kwargs):
+        return self.make_service_request(
+            base_url,
+            path=path,
+            method="PATCH",
+            payload=payload,
+            timeout=timeout,
+            retry_count=retry_count,
+            **kwargs
+        )
+
+    def put(self, base_url, path, payload, timeout, retry_count, **kwargs):
+        return self.make_service_request(
+            base_url,
+            path=path,
+            method="PUT",
+            payload=payload,
+            timeout=timeout,
+            retry_count=retry_count,
+            **kwargs
+        )
+
     def refresh_access_token(self, refresh_token):
         """
         Exchanges a refresh token with auth, and returns the subsequent access token.
