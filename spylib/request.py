@@ -13,7 +13,7 @@ class Observable(object):
     The observable class that tracks observers, and notifies them when a change occurs.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self._observers = []
 
     def register_observer(self, observer):
@@ -30,7 +30,7 @@ class Observer(object):
     The observables within ServiceRequestFactory will call `notify` on classes that inherit Observer and implement `notify`.
     """
 
-    def __init__(self, observable):
+    def __init__(self, observable, *args, **kwargs):
         observable.register_observer(self)
 
     def notify(self, observable, *args, **kwargs):
