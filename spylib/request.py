@@ -14,6 +14,7 @@ class Observable(object):
     """
 
     def __init__(self, observer_lst=None, *args, **kwargs):
+        self._observers = []
         if observer_lst and type(observer_lst) == list:
             self._observers = [] + observer_lst
 
