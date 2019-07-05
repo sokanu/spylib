@@ -32,17 +32,17 @@ In order to use the Observer pattern, you can import it and override it like so.
 
 ```
 from spylib import Observer, ServiceRequestFactory
-from database_wrapper import database_wrapper
+from database_wrapper import store_tokens
 
 class DatabaseTokenObserver(Observer):
-  def __init__(self):
+  def __init__(self, observable):
     super(DatabaseTokenObserver, self).__init__(observable)   
   
   # notify is overriden from the original Observer class
   def notify(self, observable):
     access_token = observable.access_token
     refresh_token = observable.refresh_token
-    database_wrapper.store_tokens(access_token, refresh_token)
+    store_tokens(access_token, refresh_token)
     
 
 def get_service_request_factory():
