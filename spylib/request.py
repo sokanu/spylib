@@ -57,7 +57,7 @@ class ServiceRequestFactory(Observable):
     def __init__(
         self,
         uuid,
-        api_key,
+        api_key=None,
         access_token=None,
         secret=None,
         algorithm=None,
@@ -66,6 +66,10 @@ class ServiceRequestFactory(Observable):
         **kwargs
     ):
         super().__init__(**kwargs)
+
+        # Ensure either the API or the access token must be set
+        assert bool(api_key or access_token)
+    
         try:
             self.uuid = uuid
             self.api_key = api_key
