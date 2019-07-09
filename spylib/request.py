@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from .exceptions import MethodException, AuthCredentialException
 from builtins import super
 from jwt import decode
+from jwt import ExpiredSignatureError
 from requests import get, delete, post, patch, put
 from six.moves.urllib.parse import urljoin
 import os
@@ -85,7 +86,7 @@ class ServiceRequestFactory(Observable):
         if self.access_token:
             try:
                 decode(self.access_token, self.secret, algorithms=[self.algorithm])
-            except Exception:
+            except ExpiredSignatureError:
                 self.fetch_new_tokens()
         else:
             self.fetch_new_tokens()
