@@ -249,7 +249,14 @@ class ServiceRequestFactory(Observable):
     def login(self, uuid, api_key):
         """
         Login a user on auth, returns access_token and refresh_token.
+
+        Updates `self.access_token` and `self.refresh_token` if successful.
+
+        Raises a `LoginException` if an error is encountered.
         """
+        if not self.api_key:
+            raise LoginException("Auth login failed - no API key set")
+
         resp = self.make_service_request(
             AUTH_BASE_URL,
             "api/v1/login",
@@ -258,11 +265,22 @@ class ServiceRequestFactory(Observable):
         )
 
         if resp.status_code != 200:
-            raise LoginException("Auth service login failed")
-        access_token = resp.json().get("access_token")
-        refresh_token = resp.cookies["refresh_token"]
+            raise LoginException("Auth login failed - service returned a non 200")
+
+        try:
+            access_token = resp.json()["access_token"]
+        except (ValueError, KeyError):
+            raise LoginException("Auth login failed - Could not parse the access token")
+
+        try:
+            refresh_token = resp.cookies["refresh_token"]
+        except KeyError:
+            raise LoginException("Auth login failed - fetching the refresh token")
+
         if access_token is None or refresh_token is None:
-            raise LoginException
+            raise LoginException("Auth login failed - missing either the access token or the refresh token")
+
+        # Persist the access tokens locally
         self._set_access_token(access_token)
         self._set_refresh_token(refresh_token)
 
