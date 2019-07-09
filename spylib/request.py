@@ -261,7 +261,10 @@ class ServiceRequestFactory(Observable):
             AUTH_BASE_URL,
             "api/v1/login",
             method="POST",
-            payload={"api_key": api_key, "uuid": uuid},
+            payload={
+                "api_key": self.api_key,
+                "uuid": self.uuid
+            },
         )
 
         if resp.status_code != 200:
