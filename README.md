@@ -61,7 +61,7 @@ def get_service_request_factory():
 Tests are run be unit test discovery. Please run the following command locally to run the suite.
 
 ```
-python3 -m unittest
+docker build -t spylib . && docker run spylib
 ```
 
 
