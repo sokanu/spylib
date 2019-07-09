@@ -1,11 +1,16 @@
 from __future__ import absolute_import
+from .exceptions import MethodException, AuthCredentialException
 from builtins import super
+from jwt import decode
+from jwt import ExpiredSignatureError
 from requests import get, delete, post, patch, put
-from .exceptions import MethodException, LoginException, RefreshException
-from jwt import decode, DecodeError
-from jwt.exceptions import ExpiredSignatureError
 from six.moves.urllib.parse import urljoin
 import os
+
+
+# Ensure environment variables are set
+AUTH_BASE_URL = os.environ.get("SPYLIB_AUTH_BASE_URL", None)
+assert AUTH_BASE_URL is not None
 
 
 class Observable(object):
@@ -57,34 +62,34 @@ class ServiceRequestFactory(Observable):
     def __init__(
         self,
         uuid,
-        api_key,
-        access_token=None,
+        api_key=None,
         secret=None,
         algorithm=None,
+        access_token=None,
         refresh_token=None,
         *args,
         **kwargs
     ):
         super().__init__(**kwargs)
-        try:
-            self.uuid = uuid
-            self.api_key = api_key
-            self.access_token = access_token
-            self.refresh_token = refresh_token
-            self.secret = secret
-            self.algorithm = algorithm
-            if self.access_token:
-                decode(access_token, secret, algorithms=[algorithm])
-        except ExpiredSignatureError:
+
+        # Ensure either the API or the access token must be set
+        assert bool(api_key or access_token)
+
+        self.uuid = uuid
+        self.api_key = api_key
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+        self.secret = secret
+        self.algorithm = algorithm
+
+        # Attempt to ensure that the access token is usable
+        if self.access_token:
             try:
-                self.refresh_access_token(refresh_token)
-            except RefreshException:
-                self.login(uuid, api_key)
-        except (DecodeError, KeyError, Exception) as e:
-            raise e
+                decode(self.access_token, self.secret, algorithms=[self.algorithm])
+            except ExpiredSignatureError:
+                self.fetch_new_tokens()
         else:
-            if self.access_token is None:
-                self.login(uuid, api_key)
+            self.fetch_new_tokens()
 
     def _set_access_token(self, access_token):
         self.access_token = access_token
@@ -114,6 +119,7 @@ class ServiceRequestFactory(Observable):
         headers = kwargs.get("headers", {})
         if self.access_token:
             headers.update({"Authorization": "Bearer %s" % self.access_token})
+
         url = ServiceRequestFactory.urljoin(base_url, path)
 
         if method == "GET":
@@ -129,9 +135,23 @@ class ServiceRequestFactory(Observable):
         else:
             raise MethodException
 
-        UNKNOWN_SERVER_ERROR = 500
+        # Check for a credential failure - if so, cycle our tokens and try again w/ no retry
+        # Note: We pass a negative retry_count here to prevent an infinite chain
+        if resp.status_code in [401] and retry_count >= 0:
+            self.fetch_new_tokens()
+            return self.make_service_request(
+                base_url,
+                path=path,
+                method=method,
+                payload=payload,
+                timeout=timeout,
+                retry_count=-1,
+            )
 
-        if retry_count > 0 and resp.status_code >= UNKNOWN_SERVER_ERROR:
+        # https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+        RETRIABLE_STATUS_CODES = [500, 501, 502, 503, 504, 507]
+
+        if retry_count > 0 and resp.status_code in RETRIABLE_STATUS_CODES:
             return self.make_service_request(
                 base_url,
                 path=path,
@@ -140,28 +160,10 @@ class ServiceRequestFactory(Observable):
                 timeout=timeout,
                 retry_count=retry_count - 1,
             )
-        elif retry_count > 0 and resp.status_code == 401:
-            try:
-                decode(self.access_token, self.secret, algorithms=[self.algorithm])
-            except ExpiredSignatureError:
-                if not self.refresh_token:
-                    try:
-                        self.login(self.uuid, self.api_key)
-                    except LoginException:
-                        raise LoginException
-                else:
-                    self.access_token = self.refresh_access_token(self.refresh_token)
-                return self.make_service_request(
-                    base_url,
-                    path=path,
-                    method=method,
-                    payload=payload,
-                    timeout=timeout,
-                    retry_count=retry_count - 1,
-                )
+
         return resp
 
-    def delete(self, base_url, path, timeout, retry_count, **kwargs):
+    def delete(self, base_url, path, timeout=2, retry_count=0, **kwargs):
         return self.make_service_request(
             base_url,
             path=path,
@@ -171,7 +173,7 @@ class ServiceRequestFactory(Observable):
             **kwargs
         )
 
-    def get(self, base_url, path, payload, timeout, retry_count, **kwargs):
+    def get(self, base_url, path, payload=None, timeout=2, retry_count=0, **kwargs):
         return self.make_service_request(
             base_url,
             path=path,
@@ -182,7 +184,7 @@ class ServiceRequestFactory(Observable):
             **kwargs
         )
 
-    def post(self, base_url, path, payload, timeout, retry_count, **kwargs):
+    def post(self, base_url, path, payload=None, timeout=2, retry_count=0, **kwargs):
         return self.make_service_request(
             base_url,
             path=path,
@@ -193,7 +195,7 @@ class ServiceRequestFactory(Observable):
             **kwargs
         )
 
-    def patch(self, base_url, path, payload, timeout, retry_count, **kwargs):
+    def patch(self, base_url, path, payload=None, timeout=2, retry_count=0, **kwargs):
         return self.make_service_request(
             base_url,
             path=path,
@@ -204,7 +206,7 @@ class ServiceRequestFactory(Observable):
             **kwargs
         )
 
-    def put(self, base_url, path, payload, timeout, retry_count, **kwargs):
+    def put(self, base_url, path, payload=None, timeout=2, retry_count=0, **kwargs):
         return self.make_service_request(
             base_url,
             path=path,
@@ -215,53 +217,114 @@ class ServiceRequestFactory(Observable):
             **kwargs
         )
 
-    def refresh_access_token(self, refresh_token):
+    def _fetch_new_access_token_with_refresh_token(self):
         """
-        Exchanges a refresh token with auth, and returns the subsequent access token.
+        Helper method to use `self.refresh_token` to obtain a new
+        access token.
+
+        Sets `self.access_token` if the method succeeds.
+
+        Raises `AuthCredentialException` if it fails.
         """
-        base_url = os.environ.get("SPYLIB_AUTH_BASE_URL", None)
-        if not base_url:
-            raise Exception("SPYLIB_AUTH_BASE_URL must be set.")
-        if not refresh_token:
-            raise RefreshException
-        cookies = {"refresh_token": refresh_token}
-        resp = self.make_service_request(
-            base_url,
-            "/api/v1/tokens",
-            method="POST",
-            payload={},
-            timeout=2,
-            cookies=cookies,
+        if self.refresh_token is None:
+            raise AuthCredentialException(
+                "Auth refresh failed - no refresh token found"
+            )
+
+        # Make a request
+        resp = self.post(
+            AUTH_BASE_URL,
+            "api/v1/tokens",
+            cookies={"refresh_token": self.refresh_token},
         )
-        if resp.status_code != 201:
-            raise RefreshException
-        access_token = resp.json().get("access_token")
-        if not access_token:
-            raise RefreshException
+
+        # Validation
+        if resp.status_code not in [201]:
+            raise AuthCredentialException(
+                "Auth refresh failed - auth returned a %d" % resp.status_code
+            )
+
+        try:
+            access_token = resp.json()["access_token"]
+        except (ValueError, KeyError):
+            raise AuthCredentialException(
+                "Auth refresh failed - failed parsing access token"
+            )
+
+        if access_token is None:
+            raise AuthCredentialException(
+                "Auth refresh failed - failed fetching access token"
+            )
+
+        # Persist the token locally
         self._set_access_token(access_token)
 
-    def login(self, uuid, api_key):
+    def _fetch_tokens_with_api_key(self):
         """
-        Login a user on auth, returns access_token and refresh_token.
+        Helper method to use `self.uuid` and `self.api_key` to log in to the auth service.
+
+        Sets `self.access_token` and `self.refresh_token` if the method succeeds.
+
+        Raises `AuthCredentialException` if it fails.
         """
-        base_url = os.environ.get("SPYLIB_AUTH_BASE_URL", None)
-        if not base_url:
-            raise Exception("SPYLIB_AUTH_BASE_URL must be set.")
-        resp = self.make_service_request(
-            base_url,
+        if not self.uuid or not self.api_key:
+            raise AuthCredentialException(
+                "Auth login failed - attempted to fetch tokens without providing API key or UUID"
+            )
+
+        # Make a request
+        resp = self.post(
+            AUTH_BASE_URL,
             "api/v1/login",
-            method="POST",
-            payload={"api_key": api_key, "uuid": uuid},
+            payload={"uuid": self.uuid, "api_key": self.api_key},
         )
 
-        if resp.status_code != 200:
-            raise LoginException("Auth service login failed")
-        access_token = resp.json().get("access_token")
-        refresh_token = resp.cookies["refresh_token"]
+        # Validation
+        if resp.status_code not in [200]:
+            raise AuthCredentialException(
+                "Auth login failed - service returned a non 200"
+            )
+
+        try:
+            access_token = resp.json()["access_token"]
+        except (ValueError, KeyError):
+            raise AuthCredentialException(
+                "Auth login failed - Could not parse the access token"
+            )
+
+        try:
+            refresh_token = resp.cookies["refresh_token"]
+        except KeyError:
+            raise AuthCredentialException(
+                "Auth login failed - fetching the refresh token"
+            )
+
         if access_token is None or refresh_token is None:
-            raise LoginException
+            raise AuthCredentialException(
+                "Auth login failed - missing either the access token or the refresh token"
+            )
+
+        # Persist the access tokens locally
         self._set_access_token(access_token)
         self._set_refresh_token(refresh_token)
+
+    def fetch_new_tokens(self):
+        """
+        Helper method to obtain new token(s) for making service requests.
+
+        Uses `self.refresh_token` if present, or falls back to using credentials if they are present.
+        Currently this only supports `uuid` and `api_key` as a fallback.
+
+        Raises `AuthCredentialException` if there is a problem.
+        """
+        if self.refresh_token is not None:
+            self._fetch_new_access_token_with_refresh_token()
+        elif (self.api_key is not None) and (self.uuid is not None):
+            self._fetch_tokens_with_api_key()
+        else:
+            raise AuthCredentialException(
+                "Auth token fetch failed - No refresh token or auth credentials were found, login impossible"
+            )
 
     def get_tokens_dict(self):
         return {"access_token": self.access_token, "refresh_token": self.refresh_token}
