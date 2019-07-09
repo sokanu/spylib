@@ -88,12 +88,12 @@ class ServiceRequestFactory(Observable):
             try:
                 self.refresh_access_token(refresh_token)
             except RefreshException:
-                self.login(uuid, api_key)
+                self.login()
         except (DecodeError, KeyError, Exception) as e:
             raise e
         else:
             if self.access_token is None:
-                self.login(uuid, api_key)
+                self.login()
 
     def _set_access_token(self, access_token):
         self.access_token = access_token
@@ -155,7 +155,7 @@ class ServiceRequestFactory(Observable):
             except ExpiredSignatureError:
                 if not self.refresh_token:
                     try:
-                        self.login(self.uuid, self.api_key)
+                        self.login()
                     except LoginException:
                         raise LoginException
                 else:
@@ -246,7 +246,7 @@ class ServiceRequestFactory(Observable):
             raise RefreshException
         self._set_access_token(access_token)
 
-    def login(self, uuid, api_key):
+    def login(self):
         """
         Login a user on auth, returns access_token and refresh_token.
 
