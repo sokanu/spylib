@@ -8,6 +8,11 @@ from six.moves.urllib.parse import urljoin
 import os
 
 
+# Ensure environment variables are set
+AUTH_BASE_URL = os.environ.get("SPYLIB_AUTH_BASE_URL", None)
+assert AUTH_BASE_URL is not None
+
+
 class Observable(object):
     """
     The observable class that tracks observers, and notifies them when a change occurs.
@@ -223,14 +228,11 @@ class ServiceRequestFactory(Observable):
         """
         Exchanges a refresh token with auth, and returns the subsequent access token.
         """
-        base_url = os.environ.get("SPYLIB_AUTH_BASE_URL", None)
-        if not base_url:
-            raise Exception("SPYLIB_AUTH_BASE_URL must be set.")
         if not refresh_token:
             raise RefreshException
         cookies = {"refresh_token": refresh_token}
         resp = self.make_service_request(
-            base_url,
+            AUTH_BASE_URL,
             "/api/v1/tokens",
             method="POST",
             payload={},
@@ -248,11 +250,8 @@ class ServiceRequestFactory(Observable):
         """
         Login a user on auth, returns access_token and refresh_token.
         """
-        base_url = os.environ.get("SPYLIB_AUTH_BASE_URL", None)
-        if not base_url:
-            raise Exception("SPYLIB_AUTH_BASE_URL must be set.")
         resp = self.make_service_request(
-            base_url,
+            AUTH_BASE_URL,
             "api/v1/login",
             method="POST",
             payload={"api_key": api_key, "uuid": uuid},
