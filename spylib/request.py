@@ -138,7 +138,7 @@ class ServiceRequestFactory(Observable):
         # Note: We pass a negative retry_count here to prevent an infinite chain
         if resp.status_code in [401] and retry_count >= 0:
             self.fetch_new_tokens()
-            second_resp = self.make_service_request(
+            return self.make_service_request(
                 base_url,
                 path=path,
                 method=method,
@@ -146,7 +146,6 @@ class ServiceRequestFactory(Observable):
                 timeout=timeout,
                 retry_count=-1,
             )
-            return second_resp
 
         # https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
         RETRIABLE_STATUS_CODES = [500, 501, 502, 503, 504, 507]
@@ -235,7 +234,6 @@ class ServiceRequestFactory(Observable):
         resp = self.post(
             AUTH_BASE_URL,
             "api/v1/tokens",
-            timeout=2,
             cookies={"refresh_token": self.refresh_token},
         )
 
@@ -277,7 +275,6 @@ class ServiceRequestFactory(Observable):
         resp = self.post(
             AUTH_BASE_URL,
             "api/v1/login",
-            timeout=2,
             payload={"uuid": self.uuid, "api_key": self.api_key},
         )
 
