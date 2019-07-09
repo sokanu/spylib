@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from ..request import ServiceRequestFactory, Observer
-from ..exceptions import LoginException
+from ..exceptions import AuthCredentialException
 import uuid
 import datetime
 import json
@@ -82,7 +82,7 @@ class TestServiceRequestFactory(unittest.TestCase):
         When:
             - a request obj built and server fails with a non 200 status code.
         Outcome:
-            - throws a RefreshException
+            - throws a AuthCredentialException
         """
         secret = "1234"
         algorithm = "HS256"
@@ -97,7 +97,7 @@ class TestServiceRequestFactory(unittest.TestCase):
         responses.add(
             responses.POST, "https://auth.localhost:8000/api/v1/login", status=500
         )
-        with self.assertRaises(LoginException):
+        with self.assertRaises(AuthCredentialException):
             ServiceRequestFactory(
                 uuid=str(uuid.uuid4()),
                 api_key="1234",
@@ -150,12 +150,12 @@ class TestServiceRequestFactory(unittest.TestCase):
         When:
             - service object is created
         Outcome:
-            - LoginException raised because the tokens dont exist, and login fallback fails.
+            - AuthCredentialException raised because the tokens dont exist, and login fallback fails.
         """
         responses.add(
             responses.POST, "https://auth.localhost:8000/api/v1/login", status=500
         )
-        with self.assertRaises(LoginException):
+        with self.assertRaises(AuthCredentialException):
             ServiceRequestFactory(uuid="fake", api_key="fake")
 
     @responses.activate
@@ -167,7 +167,7 @@ class TestServiceRequestFactory(unittest.TestCase):
         When:
             - login called
         Outcome:
-            - LoginException raised.
+            - AuthCredentialException raised.
         """
 
         def request_callback(request):
@@ -395,7 +395,7 @@ class TestServiceRequestFactory(unittest.TestCase):
         responses.add(
             responses.POST, "https://auth.localhost:8000/api/v1/login", status=500
         )
-        with self.assertRaises(LoginException):
+        with self.assertRaises(AuthCredentialException):
             resp.make_service_request(
                 "https://auth.localhost:8000",
                 path="/api/v1/test",
@@ -630,26 +630,13 @@ class TestServiceRequestFactory(unittest.TestCase):
         )
 
     @responses.activate
-    def test_observerable_triggers_observer_notify(self):
+    def test_observable_triggers_observer_notify(self):
         """
         Given a login that gives you a new access/refresh token, and a implemented observer pattern.
         Expect that the observer is notified that the access and refresh token were changed.
         """
         secret = "1234"
         algorithm = "HS256"
-        access_token = jwt.encode(
-            {"exp": datetime.datetime.now() + datetime.timedelta(30)},
-            secret,
-            algorithm=algorithm,
-        ).decode("utf-8")
-        factory_instance = ServiceRequestFactory(
-            uuid=str(uuid.uuid4()),
-            api_key="1234",
-            access_token=access_token,
-            refresh_token="1a2a3a",
-            secret=secret,
-            algorithm=algorithm,
-        )
 
         def request_callback(request):
             resp_body = {"access_token": "5678"}
@@ -667,8 +654,8 @@ class TestServiceRequestFactory(unittest.TestCase):
             access_token_modify = False
             refresh_token_modify = False
 
-            def __init__(self, observable):
-                super().__init__(observable)
+            def __init__(self):
+                super().__init__()
 
             def notify(self, observable, *args, **kwargs):
                 if str(observable.refresh_token) == str(1234):
@@ -676,7 +663,16 @@ class TestServiceRequestFactory(unittest.TestCase):
                 if str(observable.access_token) == str(5678):
                     self.access_token_modify = True
 
-        observer_instance = AnObserver(factory_instance)
-        factory_instance.login(factory_instance.uuid, factory_instance.api_key)
+        observer_instance = AnObserver()
+
+        # Instantiation causes tokens to be fetched - afterwards tokens should be set
+        ServiceRequestFactory(
+            uuid=str(uuid.uuid4()),
+            api_key="1234",
+            secret=secret,
+            algorithm=algorithm,
+            observer_lst=[observer_instance],
+        )
+
         assert observer_instance.access_token_modify
         assert observer_instance.refresh_token_modify

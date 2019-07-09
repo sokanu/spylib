@@ -1,9 +1,8 @@
 from __future__ import absolute_import
+from .exceptions import MethodException, AuthCredentialException
 from builtins import super
+from jwt import decode
 from requests import get, delete, post, patch, put
-from .exceptions import MethodException, LoginException, RefreshException
-from jwt import decode, DecodeError
-from jwt.exceptions import ExpiredSignatureError
 from six.moves.urllib.parse import urljoin
 import os
 
@@ -63,9 +62,9 @@ class ServiceRequestFactory(Observable):
         self,
         uuid,
         api_key=None,
-        access_token=None,
         secret=None,
         algorithm=None,
+        access_token=None,
         refresh_token=None,
         *args,
         **kwargs
@@ -74,26 +73,22 @@ class ServiceRequestFactory(Observable):
 
         # Ensure either the API or the access token must be set
         assert bool(api_key or access_token)
-    
-        try:
-            self.uuid = uuid
-            self.api_key = api_key
-            self.access_token = access_token
-            self.refresh_token = refresh_token
-            self.secret = secret
-            self.algorithm = algorithm
-            if self.access_token:
-                decode(access_token, secret, algorithms=[algorithm])
-        except ExpiredSignatureError:
+
+        self.uuid = uuid
+        self.api_key = api_key
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+        self.secret = secret
+        self.algorithm = algorithm
+
+        # Attempt to ensure that the access token is usable
+        if self.access_token:
             try:
-                self.refresh_access_token(refresh_token)
-            except RefreshException:
-                self.login()
-        except (DecodeError, KeyError, Exception) as e:
-            raise e
+                decode(self.access_token, self.secret, algorithms=[self.algorithm])
+            except Exception:
+                self.fetch_new_tokens()
         else:
-            if self.access_token is None:
-                self.login()
+            self.fetch_new_tokens()
 
     def _set_access_token(self, access_token):
         self.access_token = access_token
@@ -123,7 +118,7 @@ class ServiceRequestFactory(Observable):
         headers = kwargs.get("headers", {})
         if self.access_token:
             headers.update({"Authorization": "Bearer %s" % self.access_token})
-        
+
         url = ServiceRequestFactory.urljoin(base_url, path)
 
         if method == "GET":
@@ -152,7 +147,7 @@ class ServiceRequestFactory(Observable):
                 retry_count=-1,
             )
             return second_resp
-        
+
         # https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
         RETRIABLE_STATUS_CODES = [500, 501, 502, 503, 504, 507]
 
@@ -165,10 +160,10 @@ class ServiceRequestFactory(Observable):
                 timeout=timeout,
                 retry_count=retry_count - 1,
             )
-        
+
         return resp
 
-    def delete(self, base_url, path, timeout, retry_count, **kwargs):
+    def delete(self, base_url, path, timeout=2, retry_count=0, **kwargs):
         return self.make_service_request(
             base_url,
             path=path,
@@ -178,7 +173,7 @@ class ServiceRequestFactory(Observable):
             **kwargs
         )
 
-    def get(self, base_url, path, payload, timeout, retry_count, **kwargs):
+    def get(self, base_url, path, payload=None, timeout=2, retry_count=0, **kwargs):
         return self.make_service_request(
             base_url,
             path=path,
@@ -189,7 +184,7 @@ class ServiceRequestFactory(Observable):
             **kwargs
         )
 
-    def post(self, base_url, path, payload, timeout, retry_count, **kwargs):
+    def post(self, base_url, path, payload=None, timeout=2, retry_count=0, **kwargs):
         return self.make_service_request(
             base_url,
             path=path,
@@ -200,7 +195,7 @@ class ServiceRequestFactory(Observable):
             **kwargs
         )
 
-    def patch(self, base_url, path, payload, timeout, retry_count, **kwargs):
+    def patch(self, base_url, path, payload=None, timeout=2, retry_count=0, **kwargs):
         return self.make_service_request(
             base_url,
             path=path,
@@ -211,7 +206,7 @@ class ServiceRequestFactory(Observable):
             **kwargs
         )
 
-    def put(self, base_url, path, payload, timeout, retry_count, **kwargs):
+    def put(self, base_url, path, payload=None, timeout=2, retry_count=0, **kwargs):
         return self.make_service_request(
             base_url,
             path=path,
@@ -232,30 +227,36 @@ class ServiceRequestFactory(Observable):
         Raises `AuthCredentialException` if it fails.
         """
         if self.refresh_token is None:
-            raise AuthCredentialException("Auth refresh failed - no refresh token found")
+            raise AuthCredentialException(
+                "Auth refresh failed - no refresh token found"
+            )
 
         # Make a request
         resp = self.post(
             AUTH_BASE_URL,
             "api/v1/tokens",
             timeout=2,
-            cookies={
-                "refresh_token": self.refresh_token
-            }
+            cookies={"refresh_token": self.refresh_token},
         )
 
         # Validation
         if resp.status_code not in [201]:
-            raise AuthCredentialException("Auth refresh failed - auth returned a %d" % resp.status_code)
-        
+            raise AuthCredentialException(
+                "Auth refresh failed - auth returned a %d" % resp.status_code
+            )
+
         try:
             access_token = resp.json()["access_token"]
         except (ValueError, KeyError):
-            raise AuthCredentialException("Auth refresh failed - failed parsing access token")
-        
+            raise AuthCredentialException(
+                "Auth refresh failed - failed parsing access token"
+            )
+
         if access_token is None:
-            raise AuthCredentialException("Auth refresh failed - failed fetching access token")
-        
+            raise AuthCredentialException(
+                "Auth refresh failed - failed fetching access token"
+            )
+
         # Persist the token locally
         self._set_access_token(access_token)
 
@@ -268,35 +269,42 @@ class ServiceRequestFactory(Observable):
         Raises `AuthCredentialException` if it fails.
         """
         if not self.uuid or not self.api_key:
-            raise AuthCredentialException("Auth login failed - attempted to fetch tokens without providing API key or UUID")
-        
+            raise AuthCredentialException(
+                "Auth login failed - attempted to fetch tokens without providing API key or UUID"
+            )
+
         # Make a request
         resp = self.post(
             AUTH_BASE_URL,
             "api/v1/login",
             timeout=2,
-            payload={
-                "uuid": self.uuid,
-                "api_key": self.api_key
-            }
+            payload={"uuid": self.uuid, "api_key": self.api_key},
         )
 
         # Validation
         if resp.status_code not in [200]:
-            raise AuthCredentialException("Auth login failed - service returned a non 200")
+            raise AuthCredentialException(
+                "Auth login failed - service returned a non 200"
+            )
 
         try:
             access_token = resp.json()["access_token"]
         except (ValueError, KeyError):
-            raise AuthCredentialException("Auth login failed - Could not parse the access token")
+            raise AuthCredentialException(
+                "Auth login failed - Could not parse the access token"
+            )
 
         try:
             refresh_token = resp.cookies["refresh_token"]
         except KeyError:
-            raise AuthCredentialException("Auth login failed - fetching the refresh token")
+            raise AuthCredentialException(
+                "Auth login failed - fetching the refresh token"
+            )
 
         if access_token is None or refresh_token is None:
-            raise AuthCredentialException("Auth login failed - missing either the access token or the refresh token")
+            raise AuthCredentialException(
+                "Auth login failed - missing either the access token or the refresh token"
+            )
 
         # Persist the access tokens locally
         self._set_access_token(access_token)
@@ -308,17 +316,17 @@ class ServiceRequestFactory(Observable):
 
         Uses `self.refresh_token` if present, or falls back to using credentials if they are present.
         Currently this only supports `uuid` and `api_key` as a fallback.
-        
+
         Raises `AuthCredentialException` if there is a problem.
         """
-
-        # Try to use the refresh token to get a new access token
-        if self.refresh_token:
+        if self.refresh_token is not None:
             self._fetch_new_access_token_with_refresh_token()
-        else if (self.api_key is not None) and (self.uuid is not None):
+        elif (self.api_key is not None) and (self.uuid is not None):
             self._fetch_tokens_with_api_key()
         else:
-            raise AuthCredentialException('Auth token fetch failed - No refresh token or auth credentials were found, login impossible')
+            raise AuthCredentialException(
+                "Auth token fetch failed - No refresh token or auth credentials were found, login impossible"
+            )
 
     def get_tokens_dict(self):
         return {"access_token": self.access_token, "refresh_token": self.refresh_token}
