@@ -26,17 +26,17 @@ Spylib makes making calls to foreign services easier. The way Spylib accomplishe
 from spylib import ServiceRequestFactory
 
 srf = ServiceRequestFactory(
-  uuid=os.environ['MY_SERVICE_UUID'],
-  api_key=os.environ['MY_SERVICE_API_KEY'],
+    uuid=os.environ['MY_SERVICE_UUID'],
+    api_key=os.environ['MY_SERVICE_API_KEY'],
 )
 
 resp = srf.post(
-  'catdatabase.com',
-  'api/v1/cats',
-  payload={
-    'breed': 'Tabby',
-    'name': 'Salty'
-  }
+    'catdatabase.com',
+    'api/v1/cats',
+    payload={
+        'breed': 'Tabby',
+        'name': 'Salty'
+    }
 )
 ```
 
@@ -51,23 +51,23 @@ from spylib import Observer, ServiceRequestFactory
 from database_wrapper import store_tokens
 
 class DatabaseTokenObserver(Observer):
-  def __init__(self, *args,  **kwargs):
-    super(DatabaseTokenObserver, self).__init__(*args, **kwargs)   
-  
-  # notify is overriden from the original Observer class
-  def notify(self, observable):
-    access_token = observable.access_token
-    refresh_token = observable.refresh_token
-    store_tokens(access_token, refresh_token)
+    def __init__(self, *args,  **kwargs):
+        super(DatabaseTokenObserver, self).__init__(*args, **kwargs)   
+    
+    # notify is overriden from the original Observer class
+    def notify(self, observable):
+        access_token = observable.access_token
+        refresh_token = observable.refresh_token
+        store_tokens(access_token, refresh_token)
     
 db_token_observer = DatabaseTokenObserver()
 
 srf = ServiceRequestFactory(
-  uuid=os.environ['MY_SERVICE_UUID'],
-  api_key=os.environ['MY_SERVICE_API_KEY'],
-  access_token = get_access_token_from_db(),
-  refresh_token = get_refresh_token_from_db()
-  observer_lst=[db_token_observer]
+    uuid=os.environ['MY_SERVICE_UUID'],
+    api_key=os.environ['MY_SERVICE_API_KEY'],
+    access_token = get_access_token_from_db(),
+    refresh_token = get_refresh_token_from_db()
+    observer_lst=[db_token_observer]
 )
 ```
 
