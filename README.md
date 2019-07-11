@@ -18,25 +18,41 @@ Add the following to your requirements.txt file on its own line; and replace `va
 
 ## How to make service calls between services.
 
-Spylib houses a class called `ServiceRequestFactory` that enables you to make cross-service requests. You can import this class like so.
+Spylib makes making calls to foreign services easier. The way Spylib accomplishes this is by providing `ServiceRequestFactory`.
+
+### Example: Service-to-Service
+
 ```
 from spylib import ServiceRequestFactory
+
+srf = ServiceRequestFactory(
+  uuid=os.environ['MY_SERVICE_UUID'],
+  api_key=os.environ['MY_SERVICE_API_KEY'],
+)
+
+resp = srf.post(
+  'catdatabase.com',
+  'api/v1/cats',
+  payload={
+    'breed': 'Tabby',
+    'name': 'Salty'
+  }
+)
 ```
-ServiceRequestFactory requires you to know the `uuid` and `api_key` of the user making the cross-service request. In the future, we plan to expand this to include more fields (such as `email` and `password`). 
 
-ServiceRequestFactory comes equipped with a token management system. Your `access_token` and `refresh_token` on a factory instance, will be kept up to date as calls are made. 
+In the above example, we first initialize our request factory. This object is then used to make requests to a foreign service. In this example, we're adding a cat to some sort of cat database.
 
-Most services will need to keep track of their tokens - such as in a cache or database. Spylib employs the Observer pattern, and is equipped with an overridable `Observer` that can be consumed to help make updates to your data store. 
+Under the hood, the ServiceRequestFactory will ensure your request has the associated `access_token` required to make the request. In the above example, it does this by using the `uuid` and `api_key` supplied to make a login request to the auth service, and then use the returned token to make the actual request.
 
-In order to use the Observer pattern, you can import it and override it like so.
+To avoid having to make repeated calls to the auth service, however, Spylib offers a way for you to provide stored `access_token` and `refresh_token` values through something like a local cache.
 
 ```
 from spylib import Observer, ServiceRequestFactory
 from database_wrapper import store_tokens
 
 class DatabaseTokenObserver(Observer):
-  def __init__(self, observable):
-    super(DatabaseTokenObserver, self).__init__(observable)   
+  def __init__(self, *args,  **kwargs):
+    super(DatabaseTokenObserver, self).__init__(*args, **kwargs)   
   
   # notify is overriden from the original Observer class
   def notify(self, observable):
@@ -44,17 +60,45 @@ class DatabaseTokenObserver(Observer):
     refresh_token = observable.refresh_token
     store_tokens(access_token, refresh_token)
     
+db_token_observer = DatabaseTokenObserver()
 
-def get_service_request_factory():
-  request_instance = ServiceRequestFactory(
-    uuid = <UUID>,
-    api_key = <api_key>,
-    access_token = <optional>,
-    refresh_token = <optional>
-  )
-  observer = DatabaseTokenObserver(observable = request_instance)
-  return request_instance
+srf = ServiceRequestFactory(
+  uuid=os.environ['MY_SERVICE_UUID'],
+  api_key=os.environ['MY_SERVICE_API_KEY'],
+  access_token = get_access_token_from_db(),
+  refresh_token = get_refresh_token_from_db()
+  observer_lst=[db_token_observer]
+)
 ```
+
+In the above example, we've created an observer class called `DatabaseTokenObserver`, and when it is notified, it updates the database with the new tokens.
+
+The `ServiceRequestFactory` we instantiate also gets the current `access_token` and `refresh_token` from the DB (if they exist, presumably). The benefit of all of this work is that now subsequent calls that the factory makes will not have to go through auth, until of course the `access_token` expires. Intermediary calls to the auth service will only happen when the stored `access_token` expires, or the `refresh_token` is also expired.
+
+### Example: User-to-Service
+
+You may need to make calls to another service on behalf of a current user. To do that, we use the `ServiceRequestFactory` again.
+
+```
+from spylib import ServiceRequestFactory
+
+def my_view(request)
+    srf = ServiceRequestFactory(
+        access_token=get_at_from_request(request),
+        refresh_token=get_rt_from_request(request),
+    )
+
+    resp = srf.post(
+        'catdatabase.com',
+        'api/v1/cats',
+        payload={
+            'breed': 'Tabby',
+            'name': 'Salty'
+        }
+    )
+```
+
+In this example, `get_at_from_request` and `get_rt_from_request` would be written in your project, as the different request types or contexts are beyond the scope of Spylib.
 
 ## Tests
 
@@ -63,7 +107,6 @@ Tests are run be unit test discovery. Please run the following command locally t
 ```
 docker build -t spylib . && docker run spylib
 ```
-
 
 ## Upgrading Packages
 - When upgrading `requirements.txt`, pleases also upgrade `setup.py` if the package will effect other applications that pull in spylib.
