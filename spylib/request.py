@@ -137,7 +137,7 @@ class ServiceRequestFactory(Observable):
 
         # Check for a credential failure - if so, cycle our tokens and try again w/ no retry
         # Note: We pass a negative retry_count here to prevent an infinite chain
-        if resp.status_code in [401] and retry_count >= 0:
+        if resp.status_code in [401, 403] and retry_count >= 0:
             self.fetch_new_tokens()
             return self.make_service_request(
                 base_url,
