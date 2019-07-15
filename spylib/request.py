@@ -1,5 +1,15 @@
 from __future__ import absolute_import
-from .exceptions import MethodException, AuthCredentialException
+from .exceptions import (
+    APIException,
+    AuthCredentialException,
+    BadRequest,
+    MethodException,
+    MethodNotAllowed,
+    NotAuthenticated,
+    NotFound,
+    PermissionDenied,
+    ServiceUnavailable,
+)
 from builtins import super
 from jwt import decode
 from jwt import ExpiredSignatureError
@@ -111,6 +121,7 @@ class ServiceRequestFactory(Observable):
         payload=None,
         timeout=2,
         retry_count=0,
+        retry_on_401_403=True,
         **kwargs
     ):
         """
@@ -135,9 +146,12 @@ class ServiceRequestFactory(Observable):
         else:
             raise MethodException
 
+        # Eagerly return on successes
+        if resp.status_code in [200, 201]:
+            return resp
+
         # Check for a credential failure - if so, cycle our tokens and try again w/ no retry
-        # Note: We pass a negative retry_count here to prevent an infinite chain
-        if resp.status_code in [401, 403] and retry_count >= 0:
+        if resp.status_code in [401, 403] and retry_on_401_403:
             self.fetch_new_tokens()
             return self.make_service_request(
                 base_url,
@@ -145,12 +159,31 @@ class ServiceRequestFactory(Observable):
                 method=method,
                 payload=payload,
                 timeout=timeout,
-                retry_count=-1,
+                retry_count=retry_count - 1,
+                retry_on_401_403=False,
             )
+
+        # Check if we're on the last try, if so, we need to buble an exception
+        if retry_count <= 0:
+            if resp.status_code == 400:
+                raise BadRequest
+            elif resp.status_code == 401:
+                raise NotAuthenticated
+            elif resp.status_code == 403:
+                raise PermissionDenied
+            elif resp.status_code == 404:
+                raise NotFound
+            elif resp.status_code == 405:
+                raise MethodNotAllowed(method=resp.request.method)
+            elif resp.status_code >= 500:
+                raise ServiceUnavailable(code=resp.status_code)
+            else:
+                raise APIException
 
         # https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
         RETRIABLE_STATUS_CODES = [500, 501, 502, 503, 504, 507]
 
+        # We can try again... do it.
         if retry_count > 0 and resp.status_code in RETRIABLE_STATUS_CODES:
             return self.make_service_request(
                 base_url,
@@ -159,6 +192,7 @@ class ServiceRequestFactory(Observable):
                 payload=payload,
                 timeout=timeout,
                 retry_count=retry_count - 1,
+                retry_on_401_403=retry_on_401_403,
             )
 
         return resp
@@ -236,6 +270,8 @@ class ServiceRequestFactory(Observable):
             AUTH_BASE_URL,
             "api/v1/tokens",
             cookies={"refresh_token": self.refresh_token},
+            retry_on_401_403=False,
+            retry_count=1,
         )
 
         # Validation
@@ -277,6 +313,8 @@ class ServiceRequestFactory(Observable):
             AUTH_BASE_URL,
             "api/v1/login",
             payload={"uuid": self.uuid, "api_key": self.api_key},
+            retry_on_401_403=False,
+            retry_count=1,
         )
 
         # Validation
