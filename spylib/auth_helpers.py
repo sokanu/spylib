@@ -10,7 +10,7 @@ def create_auth_perm(access_token, service_uuid, permission_name, description):
 
     payload = {
         "owner": service_uuid,
-        "permission_name": permission_name,
+        "name": permission_name,
         "description": description,
     }
 
