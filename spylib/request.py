@@ -1,26 +1,19 @@
 from __future__ import absolute_import
-from .exceptions import (
-    APIException,
-    AuthCredentialException,
-    BadRequest,
-    MethodException,
-    MethodNotAllowed,
-    NotAuthenticated,
-    NotFound,
-    PermissionDenied,
-    ServiceUnavailable,
-)
+from .exceptions import APIException
+from .exceptions import AuthCredentialException
+from .exceptions import BadRequest
+from .exceptions import MethodException
+from .exceptions import MethodNotAllowed
+from .exceptions import NotAuthenticated
+from .exceptions import NotFound
+from .exceptions import PermissionDenied
+from .exceptions import ServiceUnavailable
+from .settings import AUTH_BASE_URL
 from builtins import super
 from jwt import decode
 from jwt import ExpiredSignatureError
 from requests import get, delete, post, patch, put
 from six.moves.urllib.parse import urljoin
-import os
-
-
-# Ensure environment variables are set
-AUTH_BASE_URL = os.environ.get("SPYLIB_AUTH_BASE_URL", None)
-assert AUTH_BASE_URL is not None
 
 
 class Observable(object):
