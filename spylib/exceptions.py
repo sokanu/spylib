@@ -46,19 +46,23 @@ class MethodNotAllowed(APIException):
     default_message = "Method {method} not allowed - 404."
     default_errors = None
 
-    def __init__(self, method, message=None, errors=None):
+    def __init__(self, method, message=None, errors=None, response=None):
         if message is None:
             message = self.default_message.format(method=method)
 
-        super(MethodNotAllowed, self).__init__(message=message, errors=errors)
+        super(MethodNotAllowed, self).__init__(
+            message=message, errors=errors, response=response
+        )
 
 
 class ServiceUnavailable(APIException):
     default_message = "The service you are trying to reach is unavailable - {code}."
     default_errors = None
 
-    def __init__(self, code, message=None, errors=None):
+    def __init__(self, code, message=None, errors=None, response=None):
         if message is None:
             message = self.default_message.format(code=code)
 
-        super(ServiceUnavailable, self).__init__(message=message, errors=errors)
+        super(ServiceUnavailable, self).__init__(
+            message=message, errors=errors, response=response
+        )
