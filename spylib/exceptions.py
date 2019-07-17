@@ -13,9 +13,10 @@ class APIException(Exception):
     default_message = "An API call has failed."
     default_errors = None
 
-    def __init__(self, message=None, errors=None):
+    def __init__(self, message=None, errors=None, response=None):
         setattr(self, "message", message or self.default_message)
         setattr(self, "errors", errors or self.default_errors)
+        setattr(self, "response", response)
 
     def __str__(self):
         return str(self.message)

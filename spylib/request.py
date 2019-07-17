@@ -158,7 +158,7 @@ class ServiceRequestFactory(Observable):
         # Check if we're on the last try, if so, we need to buble an exception
         if retry_count <= 0:
             if resp.status_code == 400:
-                raise BadRequest
+                raise BadRequest(response=resp)
             elif resp.status_code == 401:
                 raise NotAuthenticated
             elif resp.status_code == 403:
