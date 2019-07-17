@@ -160,17 +160,17 @@ class ServiceRequestFactory(Observable):
             if resp.status_code == 400:
                 raise BadRequest(response=resp)
             elif resp.status_code == 401:
-                raise NotAuthenticated
+                raise NotAuthenticated(response=resp)
             elif resp.status_code == 403:
-                raise PermissionDenied
+                raise PermissionDenied(response=resp)
             elif resp.status_code == 404:
-                raise NotFound
+                raise NotFound(response=resp)
             elif resp.status_code == 405:
-                raise MethodNotAllowed(method=resp.request.method)
+                raise MethodNotAllowed(method=resp.request.method, response=resp)
             elif resp.status_code >= 500:
-                raise ServiceUnavailable(code=resp.status_code)
+                raise ServiceUnavailable(code=resp.status_code, response=resp)
             else:
-                raise APIException
+                raise APIException(response=resp)
 
         # https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
         RETRIABLE_STATUS_CODES = [500, 501, 502, 503, 504, 507]
