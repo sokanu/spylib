@@ -49,7 +49,7 @@ class MethodNotAllowed(APIException):
         if message is None:
             message = self.default_message.format(method=method)
 
-        super().__init__(message=message, errors=errors)
+        super(APIException, self).__init__(message=message, errors=errors)
 
 
 class ServiceUnavailable(APIException):
@@ -60,4 +60,4 @@ class ServiceUnavailable(APIException):
         if message is None:
             message = self.default_message.format(code=code)
 
-        super().__init__(message=message, errors=errors)
+        super(APIException, self).__init__(message=message, errors=errors)

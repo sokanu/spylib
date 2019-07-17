@@ -3,11 +3,19 @@ executors:
   python3:
     docker:
       - image: circleci/python:3.7
+  python2:
+    docker:
+      - image: circleci/python:2.7
 jobs:
-  test:
+  test_python3:
     executor: python3
     steps:
       - run: python3 -m unittest
+  test_python2:
+    executor: python2
+    steps:
+      - run: python2 -m unittest
+
 workflows:
   test:
     jobs:
