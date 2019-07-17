@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 from .exceptions import APIException
 from .request import ServiceRequestFactory
 from .settings import AUTH_BASE_URL
+from builtins import super
 
 
 class AuthClient(ServiceRequestFactory):
