@@ -2,12 +2,11 @@ from __future__ import absolute_import
 from .exceptions import APIException
 from .request import ServiceRequestFactory
 from .settings import AUTH_BASE_URL
-from builtins import super
 
 
 class AuthClient(ServiceRequestFactory):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(AuthClient, self).__init__(*args, **kwargs)
 
     def create_auth_perm(self, owner_uuid, permission_name, description=None):
         """

@@ -9,7 +9,6 @@ from .exceptions import NotFound
 from .exceptions import PermissionDenied
 from .exceptions import ServiceUnavailable
 from .settings import AUTH_BASE_URL
-from builtins import super
 from jwt import decode
 from jwt import ExpiredSignatureError
 from requests import get, delete, post, patch, put
@@ -73,7 +72,7 @@ class ServiceRequestFactory(Observable):
         *args,
         **kwargs
     ):
-        super().__init__(**kwargs)
+        super(ServiceRequestFactory, self).__init__(*args, **kwargs)
 
         # Ensure either the API or the access token must be set
         assert bool(api_key or access_token)
