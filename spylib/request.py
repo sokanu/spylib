@@ -157,7 +157,7 @@ class ServiceRequestFactory(Observable):
             return resp
 
         # Check for a credential failure - if so, cycle our tokens and try again w/ no retry
-        if resp.status_code in [401, 403] and retry_on_401_403:
+        if resp.status_code in [401, 403] and retry_on_401_403 and self.can_authenticate():
             self.fetch_new_tokens()
             return self.make_service_request(
                 base_url,
