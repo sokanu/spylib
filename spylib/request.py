@@ -350,10 +350,6 @@ class ServiceRequestFactory(Observable):
             self._fetch_new_access_token_with_refresh_token()
         elif (self.api_key is not None) and (self.uuid is not None):
             self._fetch_tokens_with_api_key()
-        else:
-            raise AuthCredentialException(
-                "Auth token fetch failed - No refresh token or auth credentials were found, login impossible"
-            )
 
     def get_tokens_dict(self):
         return {"access_token": self.access_token, "refresh_token": self.refresh_token}
