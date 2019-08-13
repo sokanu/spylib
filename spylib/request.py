@@ -87,7 +87,9 @@ class ServiceRequestFactory(Observable):
                 decode(self.access_token, self.secret, algorithms=[self.algorithm])
             except ExpiredSignatureError:
                 self.fetch_new_tokens()
-        else:
+        elif self.refresh_token is not None:
+            self.fetch_new_tokens()
+        elif self.uuid is not None and self.api_key is not None:
             self.fetch_new_tokens()
 
     def _set_access_token(self, access_token):
