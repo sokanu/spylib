@@ -63,7 +63,7 @@ class ServiceRequestFactory(Observable):
 
     def __init__(
         self,
-        uuid,
+        uuid=None,
         api_key=None,
         secret=None,
         algorithm=None,
