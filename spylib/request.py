@@ -339,12 +339,12 @@ class ServiceRequestFactory(Observable):
 
     def fetch_new_tokens(self):
         """
-        Helper method to obtain new token(s) for making service requests.
+        Fetches and updates the tokens on the ServiceRequestFactory instance, if they can be fetched.
+        The method uses a refresh token if it exists, and falls back on the entity UUID/API key if they
+        exist.
 
-        Uses `self.refresh_token` if present, or falls back to using credentials if they are present.
-        Currently this only supports `uuid` and `api_key` as a fallback.
-
-        Raises `AuthCredentialException` if there is a problem.
+        Returns:
+            None
         """
         if self.refresh_token is not None:
             self._fetch_new_access_token_with_refresh_token()
