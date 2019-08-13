@@ -100,6 +100,21 @@ class ServiceRequestFactory(Observable):
         self.refresh_token = refresh_token
         self.notify_observers()
 
+    def can_authenticate(self):
+        """
+        Checks if the `ServiceRequestFactory` instance can authenticate.
+
+        Returns:
+            bool: Whether or not the instance is capable of authenticating.
+        """
+        if self.refresh_token is not None:
+            return True
+        
+        if (self.uuid is not None) and (self.api_key is not None):
+            return True
+        
+        return False
+
     @staticmethod
     def urljoin(base_url, path):
         return urljoin(base_url, path)
