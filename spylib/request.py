@@ -60,7 +60,6 @@ class ServiceRequestFactory(Observable):
     Storing tokens, and providing configuration is the consumers responsibility when using this library. Fortunately, there are some features provided with spylib that will make this easier.
     When implementing your cross service request, please consider establishing a class that consumes our `Observer` class with a notify functionality. When tokens change in your instance, the observer class will be notified of these changes.
     """
-
     def __init__(
         self,
         uuid=None,
@@ -117,6 +116,16 @@ class ServiceRequestFactory(Observable):
 
     @staticmethod
     def urljoin(base_url, path):
+        """
+        Returns a joined URL.
+
+        Args:
+            base_url (str): The base URL to be joined
+            path (str): The path of the URL to be joined
+        
+        Returns:
+            str: A joined URL
+        """
         return urljoin(base_url, path)
 
     def make_service_request(
@@ -131,7 +140,34 @@ class ServiceRequestFactory(Observable):
         **kwargs
     ):
         """
-        Cross service communication request, with an optional retry mechanism.
+        Makes a cross-service request with configurable timeouts and retry counts.
+
+        Args:
+            base_url (str): The base URL where the service is located
+            path (str): The URL path on the service you are trying to access
+            method (str): The HTTP method to use
+            payload (dict): The data to attach to the request
+                - for GET requests it is attached as query parameters
+                - for POST, PATCH, and PUT requests it is sent as a JSON body
+                - for DELETE requests it is ignored
+            timeout (int): The number of seconds for which to timeout after
+            retry_count (int): The number of times to retry in the event of a network failure
+            retry_on_401_403 (bool): Whether or not a retry should occur on a 401 or 403
+                - Note: When this is set to `True`, a 401 or a 403 will cause the `ServiceRequestFactory` to refresh
+                  the tokens, and to make the request again - it will only try to refresh the tokens once
+            **kwargs: Additional keyword arguments that are passed to the requests method
+        
+        Raises:
+            BadRequest: The service had a problem with the data provided
+            NotAuthenticated: The service requires an authenticated request
+            PermissionDenied: The requesting entity does not have the required permission
+            NotFound: The resource on the service could not be located
+            MethodNotAllowed: The service rejected the HTTP method
+            ServiceUnavailable: The service returned a 5XX status code
+            APIException: An unsupported status code was returned
+        
+        Returns:
+            requests.models.Response: A `Response` object including the service's HTTP response
         """
         headers = kwargs.get("headers", {})
         if self.access_token:
