@@ -60,10 +60,9 @@ class ServiceRequestFactory(Observable):
     Storing tokens, and providing configuration is the consumers responsibility when using this library. Fortunately, there are some features provided with spylib that will make this easier.
     When implementing your cross service request, please consider establishing a class that consumes our `Observer` class with a notify functionality. When tokens change in your instance, the observer class will be notified of these changes.
     """
-
     def __init__(
         self,
-        uuid,
+        uuid=None,
         api_key=None,
         secret=None,
         algorithm=None,
@@ -73,9 +72,6 @@ class ServiceRequestFactory(Observable):
         **kwargs
     ):
         super(ServiceRequestFactory, self).__init__(*args, **kwargs)
-
-        # Ensure either the API or the access token must be set
-        assert bool(api_key or access_token)
 
         self.uuid = uuid
         self.api_key = api_key
@@ -90,7 +86,9 @@ class ServiceRequestFactory(Observable):
                 decode(self.access_token, self.secret, algorithms=[self.algorithm])
             except ExpiredSignatureError:
                 self.fetch_new_tokens()
-        else:
+        elif self.refresh_token is not None:
+            self.fetch_new_tokens()
+        elif self.uuid is not None and self.api_key is not None:
             self.fetch_new_tokens()
 
     def _set_access_token(self, access_token):
@@ -101,8 +99,33 @@ class ServiceRequestFactory(Observable):
         self.refresh_token = refresh_token
         self.notify_observers()
 
+    def can_authenticate(self):
+        """
+        Checks if the `ServiceRequestFactory` instance can authenticate.
+
+        Returns:
+            bool: Whether or not the instance is capable of authenticating.
+        """
+        if self.refresh_token is not None:
+            return True
+        
+        if (self.uuid is not None) and (self.api_key is not None):
+            return True
+        
+        return False
+
     @staticmethod
     def urljoin(base_url, path):
+        """
+        Returns a joined URL.
+
+        Args:
+            base_url (str): The base URL to be joined
+            path (str): The path of the URL to be joined
+        
+        Returns:
+            str: A joined URL
+        """
         return urljoin(base_url, path)
 
     def make_service_request(
@@ -117,7 +140,34 @@ class ServiceRequestFactory(Observable):
         **kwargs
     ):
         """
-        Cross service communication request, with an optional retry mechanism.
+        Makes a cross-service request with configurable timeouts and retry counts.
+
+        Args:
+            base_url (str): The base URL where the service is located
+            path (str): The URL path on the service you are trying to access
+            method (str): The HTTP method to use
+            payload (dict): The data to attach to the request
+                - for GET requests it is attached as query parameters
+                - for POST, PATCH, and PUT requests it is sent as a JSON body
+                - for DELETE requests it is ignored
+            timeout (int): The number of seconds for which to timeout after
+            retry_count (int): The number of times to retry in the event of a network failure
+            retry_on_401_403 (bool): Whether or not a retry should occur on a 401 or 403
+                - Note: When this is set to `True`, a 401 or a 403 will cause the `ServiceRequestFactory` to refresh
+                  the tokens, and to make the request again - it will only try to refresh the tokens once
+            **kwargs: Additional keyword arguments that are passed to the requests method
+        
+        Raises:
+            BadRequest: The service had a problem with the data provided
+            NotAuthenticated: The service requires an authenticated request
+            PermissionDenied: The requesting entity does not have the required permission
+            NotFound: The resource on the service could not be located
+            MethodNotAllowed: The service rejected the HTTP method
+            ServiceUnavailable: The service returned a 5XX status code
+            APIException: An unsupported status code was returned
+        
+        Returns:
+            requests.models.Response: A `Response` object including the service's HTTP response
         """
         headers = kwargs.get("headers", {})
         if self.access_token:
@@ -143,7 +193,7 @@ class ServiceRequestFactory(Observable):
             return resp
 
         # Check for a credential failure - if so, cycle our tokens and try again w/ no retry
-        if resp.status_code in [401, 403] and retry_on_401_403:
+        if resp.status_code in [401, 403] and retry_on_401_403 and self.can_authenticate():
             self.fetch_new_tokens()
             return self.make_service_request(
                 base_url,
@@ -340,21 +390,17 @@ class ServiceRequestFactory(Observable):
 
     def fetch_new_tokens(self):
         """
-        Helper method to obtain new token(s) for making service requests.
+        Fetches and updates the tokens on the ServiceRequestFactory instance, if they can be fetched.
+        The method uses a refresh token if it exists, and falls back on the entity UUID/API key if they
+        exist.
 
-        Uses `self.refresh_token` if present, or falls back to using credentials if they are present.
-        Currently this only supports `uuid` and `api_key` as a fallback.
-
-        Raises `AuthCredentialException` if there is a problem.
+        Returns:
+            None
         """
         if self.refresh_token is not None:
             self._fetch_new_access_token_with_refresh_token()
         elif (self.api_key is not None) and (self.uuid is not None):
             self._fetch_tokens_with_api_key()
-        else:
-            raise AuthCredentialException(
-                "Auth token fetch failed - No refresh token or auth credentials were found, login impossible"
-            )
 
     def get_tokens_dict(self):
         return {"access_token": self.access_token, "refresh_token": self.refresh_token}
