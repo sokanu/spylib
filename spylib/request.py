@@ -74,9 +74,6 @@ class ServiceRequestFactory(Observable):
     ):
         super(ServiceRequestFactory, self).__init__(*args, **kwargs)
 
-        # Ensure either the API or the access token must be set
-        assert bool(api_key or access_token)
-
         self.uuid = uuid
         self.api_key = api_key
         self.access_token = access_token
