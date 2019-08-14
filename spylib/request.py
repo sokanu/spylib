@@ -14,6 +14,7 @@ from jwt import ExpiredSignatureError
 from requests import get, delete, post, patch, put
 from six.moves.urllib.parse import urljoin
 from requests.exceptions import Timeout as RequestsTimeout
+import copy
 
 
 class Observable(object):
