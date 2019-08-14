@@ -55,6 +55,11 @@ class MethodNotAllowed(APIException):
         )
 
 
+class Timeout(APIException):
+    default_message = "An upstream server timedout."
+    default_errors = None
+
+
 class ServiceUnavailable(APIException):
     default_message = "The service you are trying to reach is unavailable - {code}."
     default_errors = None

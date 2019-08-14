@@ -13,6 +13,8 @@ from jwt import decode
 from jwt import ExpiredSignatureError
 from requests import get, delete, post, patch, put
 from six.moves.urllib.parse import urljoin
+from requests.exceptions import Timeout as RequestsTimeout
+import copy
 
 
 class Observable(object):
@@ -60,6 +62,13 @@ class ServiceRequestFactory(Observable):
     Storing tokens, and providing configuration is the consumers responsibility when using this library. Fortunately, there are some features provided with spylib that will make this easier.
     When implementing your cross service request, please consider establishing a class that consumes our `Observer` class with a notify functionality. When tokens change in your instance, the observer class will be notified of these changes.
     """
+    METHOD_MAP = {
+        "GET": get,
+        "DELETE": delete,
+        "POST": post,
+        "PATCH": patch,
+        "PUT": put
+    }
     def __init__(
         self,
         uuid=None,
@@ -114,20 +123,6 @@ class ServiceRequestFactory(Observable):
         
         return False
 
-    @staticmethod
-    def urljoin(base_url, path):
-        """
-        Returns a joined URL.
-
-        Args:
-            base_url (str): The base URL to be joined
-            path (str): The path of the URL to be joined
-        
-        Returns:
-            str: A joined URL
-        """
-        return urljoin(base_url, path)
-
     def make_service_request(
         self,
         base_url,
@@ -164,29 +159,64 @@ class ServiceRequestFactory(Observable):
             NotFound: The resource on the service could not be located
             MethodNotAllowed: The service rejected the HTTP method
             ServiceUnavailable: The service returned a 5XX status code
+            Timeout: The service request timed out
             APIException: An unsupported status code was returned
         
         Returns:
             requests.models.Response: A `Response` object including the service's HTTP response
         """
-        headers = kwargs.get("headers", {})
+        if method not in self.METHOD_MAP:
+            raise MethodException
+        
+        # Build our request
+        url = ServiceRequestFactory.urljoin(base_url, path)
+        
+        # Keep a copy of the kwargs around for retries
+        original_kwargs = copy.deepcopy(kwargs)
+        
+        # Pop headers from kwargs so we don't pass it to requests twice
+        headers = kwargs.pop('headers', {})
         if self.access_token:
             headers.update({"Authorization": "Bearer %s" % self.access_token})
-
-        url = ServiceRequestFactory.urljoin(base_url, path)
-
+        
+        # Build keyword arguments that get passed to the specific requests library function
         if method == "GET":
-            resp = get(url, params=payload, headers=headers, timeout=timeout, **kwargs)
-        elif method == "DELETE":
-            resp = delete(url, headers=headers, timeout=timeout, **kwargs)
-        elif method == "POST":
-            resp = post(url, json=payload, headers=headers, timeout=timeout, **kwargs)
-        elif method == "PATCH":
-            resp = patch(url, json=payload, headers=headers, timeout=timeout, **kwargs)
-        elif method == "PUT":
-            resp = put(url, json=payload, headers=headers, timeout=timeout, **kwargs)
+            # Pop params from kwargs so we don't pass it to requests twice
+            params = payload or {}
+            params.update(kwargs.pop('params', {}))
+            additional_kwargs = {"params": params}
+        elif method in ["POST", "PATCH", "PUT"]:
+            # Pop json from kwargs so we don't pass it to requests twice
+            json = payload or {}
+            json.update(kwargs.pop('json', {}))
+            additional_kwargs = {"json": json}
         else:
-            raise MethodException
+            additional_kwargs = {}
+        
+        func = self.METHOD_MAP[method]
+        try:
+            resp = func(
+                url,
+                headers=headers,
+                timeout=timeout,
+                **kwargs,
+                **additional_kwargs
+            )
+        except RequestsTimeout:
+            # Retry if we can, otherwise throw an internal exception
+            if retry_count > 0:
+                return self.make_service_request(
+                    base_url,
+                    path,
+                    method=method,
+                    payload=payload,
+                    timeout=timeout,
+                    retry_count=retry_count - 1,
+                    retry_on_401_403=retry_on_401_403,
+                    **original_kwargs
+                )
+            else:
+                raise Timeout(response=response)
 
         # Eagerly return on successes
         if resp.status_code in [200, 201]:
@@ -203,6 +233,7 @@ class ServiceRequestFactory(Observable):
                 timeout=timeout,
                 retry_count=retry_count - 1,
                 retry_on_401_403=False,
+                **original_kwargs
             )
 
         # Check if we're on the last try, if so, we need to buble an exception
@@ -235,6 +266,7 @@ class ServiceRequestFactory(Observable):
                 timeout=timeout,
                 retry_count=retry_count - 1,
                 retry_on_401_403=retry_on_401_403,
+                **original_kwargs
             )
 
         return resp
@@ -404,3 +436,17 @@ class ServiceRequestFactory(Observable):
 
     def get_tokens_dict(self):
         return {"access_token": self.access_token, "refresh_token": self.refresh_token}
+
+    @staticmethod
+    def urljoin(base_url, path):
+        """
+        Returns a joined URL.
+
+        Args:
+            base_url (str): The base URL to be joined
+            path (str): The path of the URL to be joined
+        
+        Returns:
+            str: A joined URL
+        """
+        return urljoin(base_url, path)
