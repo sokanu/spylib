@@ -1,3 +1,4 @@
+"""Request module responsible for all intra-service communication."""
 from __future__ import absolute_import
 from .exceptions import APIException
 from .exceptions import AuthCredentialException
@@ -18,37 +19,65 @@ import copy
 
 
 class Observable(object):
-    """
-    The observable class that tracks observers, and notifies them when a change occurs.
-    """
+    """The observable class that tracks observers, and notifies them when a change occurs."""
 
     def __init__(self, observer_lst=None, *args, **kwargs):
+        """
+        Observable initializer. Create a new observable to watch an observer.
+
+        Args:
+            observer_lst(list): A list of observers
+
+        """
         self._observers = []
         if observer_lst and type(observer_lst) == list:
             self._observers = [] + observer_lst
 
     def register_observer(self, observer):
+        """
+        Register an observer to the observable.
+
+        Args:
+            observer(Observer): A observer to register
+
+        """
         self._observers.append(observer)
 
     def notify_observers(self, *args, **kwargs):
+        """
+        Notify the observer list.
+
+        Args:
+            None
+
+        """
         for obs in self._observers:
             obs.notify(self, *args, **kwargs)
 
 
 class Observer(object):
-    """
-    An observer that can be implemented by the consumer in order to ease tracking of changes of access and refresh tokens.
-    The observables within ServiceRequestFactory will call `notify` on classes that inherit Observer and implement `notify`.
-    """
+    """An observer that can be implemented by the consumer in order to ease tracking of changes of access and refresh tokens. The observables within ServiceRequestFactory will call `notify` on classes that inherit Observer and implement `notify`."""
 
     def __init__(self, observable=None, *args, **kwargs):
+        """
+        Observer initalizer. Create a new observer.
+
+        Args:
+            observerable(Observable): An observable that monitors this observer.
+
+        """
         if observable:
             observable.register_observer(self)
 
     def notify(self, observable, *args, **kwargs):
         """
         Notify is a method that is triggered on an observer, when an observable changes.
+
         The `observable` is a type of object that inherits the `Observable` type. For this libraries purpose, ServiceRequestFactory inherits from `Observable` type.
+
+        Args:
+            observable(Observable): An observable to notify.
+
         """
         raise NotImplementedError
 
@@ -82,6 +111,18 @@ class ServiceRequestFactory(Observable):
         *args,
         **kwargs
     ):
+        """
+        Initialize a service request factory that can be used for intra-service communication.
+
+        Args:
+            uuid(uuid): The uuid of the entity used as the identity of the the request.
+            api_key(str): The api_key belonging to the entity making the request.
+            secret(str): The secret that decrypts/encrypts JWT's.
+            algorithm(str): The hash algorithm used for decrypt/encrypting JWT's.
+            access_token(uuid): The JWT access token being used in the requests.
+            refresh_token(str): The refresh token being used in the requests.
+
+        """
         super(ServiceRequestFactory, self).__init__(*args, **kwargs)
 
         self.uuid = uuid
@@ -103,19 +144,34 @@ class ServiceRequestFactory(Observable):
             self.fetch_new_tokens()
 
     def _set_access_token(self, access_token):
+        """
+        Set an access token on the factory instance.
+
+        Args:
+            access_token(uuid): The access token to set
+
+        """
         self.access_token = access_token
         self.notify_observers()
 
     def _set_refresh_token(self, refresh_token):
+        """
+        Set an access token on the factory instance.
+
+        Args:
+            refresh_token(str): The refresh token to set
+
+        """
         self.refresh_token = refresh_token
         self.notify_observers()
 
     def can_authenticate(self):
         """
-        Checks if the `ServiceRequestFactory` instance can authenticate.
+        Check if the `ServiceRequestFactory` instance can authenticate.
 
         Returns:
             bool: Whether or not the instance is capable of authenticating.
+
         """
         if self.refresh_token is not None:
             return True
@@ -137,7 +193,7 @@ class ServiceRequestFactory(Observable):
         **kwargs
     ):
         """
-        Makes a cross-service request with configurable timeouts and retry counts.
+        Make a cross-service request with configurable timeouts and retry counts.
 
         Args:
             base_url (str): The base URL where the service is located
@@ -166,6 +222,7 @@ class ServiceRequestFactory(Observable):
 
         Returns:
             requests.models.Response: A `Response` object including the service's HTTP response
+
         """
         if method not in self.METHOD_MAP:
             raise MethodException
@@ -273,6 +330,7 @@ class ServiceRequestFactory(Observable):
         return resp
 
     def delete(self, base_url, path, timeout=2, retry_count=0, **kwargs):
+        """Short hand alias for make_service_request that uses DELETE."""
         return self.make_service_request(
             base_url,
             path=path,
@@ -283,6 +341,7 @@ class ServiceRequestFactory(Observable):
         )
 
     def get(self, base_url, path, payload=None, timeout=2, retry_count=0, **kwargs):
+        """Short hand alias for make_service_request that uses GET."""
         return self.make_service_request(
             base_url,
             path=path,
@@ -294,6 +353,7 @@ class ServiceRequestFactory(Observable):
         )
 
     def post(self, base_url, path, payload=None, timeout=2, retry_count=0, **kwargs):
+        """Short hand alias for make_service_request that uses POST."""
         return self.make_service_request(
             base_url,
             path=path,
@@ -305,6 +365,7 @@ class ServiceRequestFactory(Observable):
         )
 
     def patch(self, base_url, path, payload=None, timeout=2, retry_count=0, **kwargs):
+        """Short hand alias for make_service_request that uses PATCH."""
         return self.make_service_request(
             base_url,
             path=path,
@@ -316,6 +377,7 @@ class ServiceRequestFactory(Observable):
         )
 
     def put(self, base_url, path, payload=None, timeout=2, retry_count=0, **kwargs):
+        """Short hand alias for make_service_request that uses PUT."""
         return self.make_service_request(
             base_url,
             path=path,
@@ -328,12 +390,12 @@ class ServiceRequestFactory(Observable):
 
     def _fetch_new_access_token_with_refresh_token(self):
         """
-        Helper method to use `self.refresh_token` to obtain a new
-        access token.
+        Private helper method to use `self.refresh_token` to obtain a new access token.
 
         Sets `self.access_token` if the method succeeds.
 
         Raises `AuthCredentialException` if it fails.
+
         """
         if self.refresh_token is None:
             raise AuthCredentialException(
@@ -372,11 +434,12 @@ class ServiceRequestFactory(Observable):
 
     def _fetch_tokens_with_api_key(self):
         """
-        Helper method to use `self.uuid` and `self.api_key` to log in to the auth service.
+        Private helper method to use `self.uuid` and `self.api_key` to log in to the auth service.
 
         Sets `self.access_token` and `self.refresh_token` if the method succeeds.
 
         Raises `AuthCredentialException` if it fails.
+
         """
         if not self.uuid or not self.api_key:
             raise AuthCredentialException(
@@ -423,12 +486,14 @@ class ServiceRequestFactory(Observable):
 
     def fetch_new_tokens(self):
         """
-        Fetches and updates the tokens on the ServiceRequestFactory instance, if they can be fetched.
+        Fetch and update the tokens on the ServiceRequestFactory instance, if they can be fetched.
+
         The method uses a refresh token if it exists, and falls back on the entity UUID/API key if they
         exist.
 
-        Returns:
+        Return:
             None
+
         """
         if self.refresh_token is not None:
             self._fetch_new_access_token_with_refresh_token()
@@ -436,12 +501,13 @@ class ServiceRequestFactory(Observable):
             self._fetch_tokens_with_api_key()
 
     def get_tokens_dict(self):
+        """Return access and refresh token dict from current instance."""
         return {"access_token": self.access_token, "refresh_token": self.refresh_token}
 
     @staticmethod
     def urljoin(base_url, path):
         """
-        Returns a joined URL.
+        Return a joined URL.
 
         Args:
             base_url (str): The base URL to be joined
@@ -449,5 +515,6 @@ class ServiceRequestFactory(Observable):
 
         Returns:
             str: A joined URL
+
         """
         return urljoin(base_url, path)
