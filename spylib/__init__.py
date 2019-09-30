@@ -1,3 +1,5 @@
+"""Spylib package."""
+# flake8: noqa
 name = "spylib"
 from .request import ServiceRequestFactory, Observable, Observer
 from .permission import has_permission
