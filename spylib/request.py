@@ -62,13 +62,15 @@ class ServiceRequestFactory(Observable):
     Storing tokens, and providing configuration is the consumers responsibility when using this library. Fortunately, there are some features provided with spylib that will make this easier.
     When implementing your cross service request, please consider establishing a class that consumes our `Observer` class with a notify functionality. When tokens change in your instance, the observer class will be notified of these changes.
     """
+
     METHOD_MAP = {
         "GET": get,
         "DELETE": delete,
         "POST": post,
         "PATCH": patch,
-        "PUT": put
+        "PUT": put,
     }
+
     def __init__(
         self,
         uuid=None,
@@ -117,10 +119,10 @@ class ServiceRequestFactory(Observable):
         """
         if self.refresh_token is not None:
             return True
-        
+
         if (self.uuid is not None) and (self.api_key is not None):
             return True
-        
+
         return False
 
     def make_service_request(
@@ -151,7 +153,7 @@ class ServiceRequestFactory(Observable):
                 - Note: When this is set to `True`, a 401 or a 403 will cause the `ServiceRequestFactory` to refresh
                   the tokens, and to make the request again - it will only try to refresh the tokens once
             **kwargs: Additional keyword arguments that are passed to the requests method
-        
+
         Raises:
             BadRequest: The service had a problem with the data provided
             NotAuthenticated: The service requires an authenticated request
@@ -161,47 +163,42 @@ class ServiceRequestFactory(Observable):
             ServiceUnavailable: The service returned a 5XX status code
             Timeout: The service request timed out
             APIException: An unsupported status code was returned
-        
+
         Returns:
             requests.models.Response: A `Response` object including the service's HTTP response
         """
         if method not in self.METHOD_MAP:
             raise MethodException
-        
+
         # Build our request
         url = ServiceRequestFactory.urljoin(base_url, path)
-        
+
         # Keep a copy of the kwargs around for retries
         original_kwargs = copy.deepcopy(kwargs)
-        
+
         # Pop headers from kwargs so we don't pass it to requests twice
-        headers = kwargs.pop('headers', {})
+        headers = kwargs.pop("headers", {})
         if self.access_token:
             headers.update({"Authorization": "Bearer %s" % self.access_token})
-        
+
         # Build keyword arguments that get passed to the specific requests library function
         if method == "GET":
             # Pop params from kwargs so we don't pass it to requests twice
             params = payload or {}
-            params.update(kwargs.pop('params', {}))
+            params.update(kwargs.pop("params", {}))
             additional_kwargs = {"params": params}
         elif method in ["POST", "PATCH", "PUT"]:
             # Pop json from kwargs so we don't pass it to requests twice
             json = payload or {}
-            json.update(kwargs.pop('json', {}))
+            json.update(kwargs.pop("json", {}))
             additional_kwargs = {"json": json}
         else:
             additional_kwargs = {}
-        
+
         func = self.METHOD_MAP[method]
         try:
-            resp = func(
-                url,
-                headers=headers,
-                timeout=timeout,
-                **kwargs,
-                **additional_kwargs
-            )
+            next_calls_kwargs = kwargs.update(additional_kwargs)
+            resp = func(url, headers=headers, timeout=timeout, **next_calls_kwargs)
         except RequestsTimeout:
             # Retry if we can, otherwise throw an internal exception
             if retry_count > 0:
@@ -216,14 +213,18 @@ class ServiceRequestFactory(Observable):
                     **original_kwargs
                 )
             else:
-                raise Timeout(response=response)
+                raise RequestsTimeout
 
         # Eagerly return on successes
         if resp.status_code in [200, 201]:
             return resp
 
         # Check for a credential failure - if so, cycle our tokens and try again w/ no retry
-        if resp.status_code in [401, 403] and retry_on_401_403 and self.can_authenticate():
+        if (
+            resp.status_code in [401, 403]
+            and retry_on_401_403
+            and self.can_authenticate()
+        ):
             self.fetch_new_tokens()
             return self.make_service_request(
                 base_url,
@@ -445,7 +446,7 @@ class ServiceRequestFactory(Observable):
         Args:
             base_url (str): The base URL to be joined
             path (str): The path of the URL to be joined
-        
+
         Returns:
             str: A joined URL
         """
