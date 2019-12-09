@@ -1,0 +1,490 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Welcome to spylib’s documentation! &mdash; spylib 0.1.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> spylib
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Welcome to spylib’s documentation!</a></li>
+<li><a class="reference internal" href="#module-spylib.request">Request Module</a></li>
+<li><a class="reference internal" href="#module-spylib.permission">Permission Module</a></li>
+<li><a class="reference internal" href="#module-spylib.exceptions">Exception Module</a></li>
+<li><a class="reference internal" href="#module-spylib.auth_client">Auth Client Module</a></li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">spylib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#">Docs</a> &raquo;</li>
+        
+      <li>Welcome to spylib’s documentation!</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="welcome-to-spylib-s-documentation">
+<h1>Welcome to spylib’s documentation!<a class="headerlink" href="#welcome-to-spylib-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p>Spylib is Sokanu’s Python library, used for sharing abstract and generic logic. Please see the docs for examples and explanation of usage.</p>
+<hr class="docutils" />
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="module-spylib.request">
+<span id="request-module"></span><h1>Request Module<a class="headerlink" href="#module-spylib.request" title="Permalink to this headline">¶</a></h1>
+<p>Request module responsible for all intra-service communication.</p>
+<dl class="class">
+<dt id="spylib.request.Observable">
+<em class="property">class </em><code class="sig-prename descclassname">spylib.request.</code><code class="sig-name descname">Observable</code><span class="sig-paren">(</span><em class="sig-param">observer_lst=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.Observable" title="Permalink to this definition">¶</a></dt>
+<dd><p>The observable class that tracks observers, and notifies them when a change occurs.</p>
+<dl class="method">
+<dt id="spylib.request.Observable.notify_observers">
+<code class="sig-name descname">notify_observers</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.Observable.notify_observers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Notify the observer list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>None</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.request.Observable.register_observer">
+<code class="sig-name descname">register_observer</code><span class="sig-paren">(</span><em class="sig-param">observer</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.Observable.register_observer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register an observer to the observable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>observer</strong> (<a class="reference internal" href="#spylib.request.Observer" title="spylib.request.Observer"><em>Observer</em></a>) – A observer to register</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spylib.request.Observer">
+<em class="property">class </em><code class="sig-prename descclassname">spylib.request.</code><code class="sig-name descname">Observer</code><span class="sig-paren">(</span><em class="sig-param">observable=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.Observer" title="Permalink to this definition">¶</a></dt>
+<dd><p>An observer that can be implemented by the consumer in order to ease tracking of changes of access and refresh tokens. The observables within ServiceRequestFactory will call <cite>notify</cite> on classes that inherit Observer and implement <cite>notify</cite>.</p>
+<dl class="method">
+<dt id="spylib.request.Observer.notify">
+<code class="sig-name descname">notify</code><span class="sig-paren">(</span><em class="sig-param">observable</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.Observer.notify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Notify is a method that is triggered on an observer, when an observable changes.</p>
+<p>The <cite>observable</cite> is a type of object that inherits the <cite>Observable</cite> type. For this libraries purpose, ServiceRequestFactory inherits from <cite>Observable</cite> type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>observable</strong> (<a class="reference internal" href="#spylib.request.Observable" title="spylib.request.Observable"><em>Observable</em></a>) – An observable to notify.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spylib.request.ServiceRequestFactory">
+<em class="property">class </em><code class="sig-prename descclassname">spylib.request.</code><code class="sig-name descname">ServiceRequestFactory</code><span class="sig-paren">(</span><em class="sig-param">uuid=None</em>, <em class="sig-param">api_key=None</em>, <em class="sig-param">secret=None</em>, <em class="sig-param">algorithm=None</em>, <em class="sig-param">access_token=None</em>, <em class="sig-param">refresh_token=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.ServiceRequestFactory" title="Permalink to this definition">¶</a></dt>
+<dd><p>A service request factory is an object that is used across our microservices for cross service requests.</p>
+<p>When creating a new instance of the factory, ServiceRequestFactory will eagerly refresh your access token, provided a valid refresh token.
+The factory requires a UUID and API_KEY when being used, as this will act as a fallback in the event your provided tokens fail.
+Storing tokens, and providing configuration is the consumers responsibility when using this library. Fortunately, there are some features provided with spylib that will make this easier.
+When implementing your cross service request, please consider establishing a class that consumes our <cite>Observer</cite> class with a notify functionality. When tokens change in your instance, the observer class will be notified of these changes.</p>
+<dl class="method">
+<dt id="spylib.request.ServiceRequestFactory.can_authenticate">
+<code class="sig-name descname">can_authenticate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.ServiceRequestFactory.can_authenticate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the <cite>ServiceRequestFactory</cite> instance can authenticate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Whether or not the instance is capable of authenticating.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.request.ServiceRequestFactory.delete">
+<code class="sig-name descname">delete</code><span class="sig-paren">(</span><em class="sig-param">base_url</em>, <em class="sig-param">path</em>, <em class="sig-param">timeout=2</em>, <em class="sig-param">retry_count=0</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.ServiceRequestFactory.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Short hand alias for make_service_request that uses DELETE.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.request.ServiceRequestFactory.fetch_new_tokens">
+<code class="sig-name descname">fetch_new_tokens</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.ServiceRequestFactory.fetch_new_tokens" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch and update the tokens on the ServiceRequestFactory instance, if they can be fetched.</p>
+<p>The method uses a refresh token if it exists, and falls back on the entity UUID/API key if they
+exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.request.ServiceRequestFactory.get">
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param">base_url</em>, <em class="sig-param">path</em>, <em class="sig-param">payload=None</em>, <em class="sig-param">timeout=2</em>, <em class="sig-param">retry_count=0</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.ServiceRequestFactory.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Short hand alias for make_service_request that uses GET.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.request.ServiceRequestFactory.get_tokens_dict">
+<code class="sig-name descname">get_tokens_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.ServiceRequestFactory.get_tokens_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return access and refresh token dict from current instance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.request.ServiceRequestFactory.make_service_request">
+<code class="sig-name descname">make_service_request</code><span class="sig-paren">(</span><em class="sig-param">base_url</em>, <em class="sig-param">path</em>, <em class="sig-param">method='GET'</em>, <em class="sig-param">payload=None</em>, <em class="sig-param">timeout=2</em>, <em class="sig-param">retry_count=0</em>, <em class="sig-param">retry_on_401_403=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.ServiceRequestFactory.make_service_request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a cross-service request with configurable timeouts and retry counts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_url</strong> (<em>str</em>) – The base URL where the service is located</p></li>
+<li><p><strong>path</strong> (<em>str</em>) – The URL path on the service you are trying to access</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – The HTTP method to use</p></li>
+<li><p><strong>payload</strong> (<em>dict</em>) – The data to attach to the request
+- for GET requests it is attached as query parameters
+- for POST, PATCH, and PUT requests it is sent as a JSON body
+- for DELETE requests it is ignored</p></li>
+<li><p><strong>timeout</strong> (<em>int</em>) – The number of seconds for which to timeout after</p></li>
+<li><p><strong>retry_count</strong> (<em>int</em>) – The number of times to retry in the event of a network failure</p></li>
+<li><p><strong>retry_on_401_403</strong> (<em>bool</em>) – <p>Whether or not a retry should occur on a 401 or 403
+- Note: When this is set to <cite>True</cite>, a 401 or a 403 will cause the <cite>ServiceRequestFactory</cite> to refresh</p>
+<blockquote>
+<div><p>the tokens, and to make the request again - it will only try to refresh the tokens once</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments that are passed to the requests method</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#spylib.exceptions.BadRequest" title="spylib.exceptions.BadRequest"><strong>BadRequest</strong></a> – The service had a problem with the data provided</p></li>
+<li><p><a class="reference internal" href="#spylib.exceptions.NotAuthenticated" title="spylib.exceptions.NotAuthenticated"><strong>NotAuthenticated</strong></a> – The service requires an authenticated request</p></li>
+<li><p><a class="reference internal" href="#spylib.exceptions.PermissionDenied" title="spylib.exceptions.PermissionDenied"><strong>PermissionDenied</strong></a> – The requesting entity does not have the required permission</p></li>
+<li><p><a class="reference internal" href="#spylib.exceptions.NotFound" title="spylib.exceptions.NotFound"><strong>NotFound</strong></a> – The resource on the service could not be located</p></li>
+<li><p><a class="reference internal" href="#spylib.exceptions.MethodNotAllowed" title="spylib.exceptions.MethodNotAllowed"><strong>MethodNotAllowed</strong></a> – The service rejected the HTTP method</p></li>
+<li><p><a class="reference internal" href="#spylib.exceptions.ServiceUnavailable" title="spylib.exceptions.ServiceUnavailable"><strong>ServiceUnavailable</strong></a> – The service returned a 5XX status code</p></li>
+<li><p><a class="reference internal" href="#spylib.exceptions.Timeout" title="spylib.exceptions.Timeout"><strong>Timeout</strong></a> – The service request timed out</p></li>
+<li><p><a class="reference internal" href="#spylib.exceptions.APIException" title="spylib.exceptions.APIException"><strong>APIException</strong></a> – An unsupported status code was returned</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A <cite>Response</cite> object including the service’s HTTP response</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>requests.models.Response</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.request.ServiceRequestFactory.patch">
+<code class="sig-name descname">patch</code><span class="sig-paren">(</span><em class="sig-param">base_url</em>, <em class="sig-param">path</em>, <em class="sig-param">payload=None</em>, <em class="sig-param">timeout=2</em>, <em class="sig-param">retry_count=0</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.ServiceRequestFactory.patch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Short hand alias for make_service_request that uses PATCH.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.request.ServiceRequestFactory.post">
+<code class="sig-name descname">post</code><span class="sig-paren">(</span><em class="sig-param">base_url</em>, <em class="sig-param">path</em>, <em class="sig-param">payload=None</em>, <em class="sig-param">timeout=2</em>, <em class="sig-param">retry_count=0</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.ServiceRequestFactory.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Short hand alias for make_service_request that uses POST.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.request.ServiceRequestFactory.put">
+<code class="sig-name descname">put</code><span class="sig-paren">(</span><em class="sig-param">base_url</em>, <em class="sig-param">path</em>, <em class="sig-param">payload=None</em>, <em class="sig-param">timeout=2</em>, <em class="sig-param">retry_count=0</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.ServiceRequestFactory.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Short hand alias for make_service_request that uses PUT.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.request.ServiceRequestFactory.urljoin">
+<em class="property">static </em><code class="sig-name descname">urljoin</code><span class="sig-paren">(</span><em class="sig-param">base_url</em>, <em class="sig-param">path</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.request.ServiceRequestFactory.urljoin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a joined URL.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_url</strong> (<em>str</em>) – The base URL to be joined</p></li>
+<li><p><strong>path</strong> (<em>str</em>) – The path of the URL to be joined</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A joined URL</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-spylib.permission">
+<span id="permission-module"></span><h1>Permission Module<a class="headerlink" href="#module-spylib.permission" title="Permalink to this headline">¶</a></h1>
+</div>
+<div class="section" id="module-spylib.exceptions">
+<span id="exception-module"></span><h1>Exception Module<a class="headerlink" href="#module-spylib.exceptions" title="Permalink to this headline">¶</a></h1>
+<p>Exceptions file for Spylib.</p>
+<dl class="exception">
+<dt id="spylib.exceptions.APIException">
+<em class="property">exception </em><code class="sig-prename descclassname">spylib.exceptions.</code><code class="sig-name descname">APIException</code><span class="sig-paren">(</span><em class="sig-param">message=None</em>, <em class="sig-param">errors=None</em>, <em class="sig-param">response=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.exceptions.APIException" title="Permalink to this definition">¶</a></dt>
+<dd><p>API Exception generated by Spylib.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="spylib.exceptions.AuthCredentialException">
+<em class="property">exception </em><code class="sig-prename descclassname">spylib.exceptions.</code><code class="sig-name descname">AuthCredentialException</code><a class="headerlink" href="#spylib.exceptions.AuthCredentialException" title="Permalink to this definition">¶</a></dt>
+<dd><p>AuthCredentialException yet to be implemented.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="spylib.exceptions.BadRequest">
+<em class="property">exception </em><code class="sig-prename descclassname">spylib.exceptions.</code><code class="sig-name descname">BadRequest</code><span class="sig-paren">(</span><em class="sig-param">message=None</em>, <em class="sig-param">errors=None</em>, <em class="sig-param">response=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.exceptions.BadRequest" title="Permalink to this definition">¶</a></dt>
+<dd><p>BadRequest Exception returning a 400.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="spylib.exceptions.MethodException">
+<em class="property">exception </em><code class="sig-prename descclassname">spylib.exceptions.</code><code class="sig-name descname">MethodException</code><a class="headerlink" href="#spylib.exceptions.MethodException" title="Permalink to this definition">¶</a></dt>
+<dd><p>MethodException yet to be implemented.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="spylib.exceptions.MethodNotAllowed">
+<em class="property">exception </em><code class="sig-prename descclassname">spylib.exceptions.</code><code class="sig-name descname">MethodNotAllowed</code><span class="sig-paren">(</span><em class="sig-param">method</em>, <em class="sig-param">message=None</em>, <em class="sig-param">errors=None</em>, <em class="sig-param">response=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.exceptions.MethodNotAllowed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bad method used.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="spylib.exceptions.NotAuthenticated">
+<em class="property">exception </em><code class="sig-prename descclassname">spylib.exceptions.</code><code class="sig-name descname">NotAuthenticated</code><span class="sig-paren">(</span><em class="sig-param">message=None</em>, <em class="sig-param">errors=None</em>, <em class="sig-param">response=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.exceptions.NotAuthenticated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Authentication Exception returning a 401.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="spylib.exceptions.NotFound">
+<em class="property">exception </em><code class="sig-prename descclassname">spylib.exceptions.</code><code class="sig-name descname">NotFound</code><span class="sig-paren">(</span><em class="sig-param">message=None</em>, <em class="sig-param">errors=None</em>, <em class="sig-param">response=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.exceptions.NotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resource not found Exception returning a 403.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="spylib.exceptions.PermissionDenied">
+<em class="property">exception </em><code class="sig-prename descclassname">spylib.exceptions.</code><code class="sig-name descname">PermissionDenied</code><span class="sig-paren">(</span><em class="sig-param">message=None</em>, <em class="sig-param">errors=None</em>, <em class="sig-param">response=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.exceptions.PermissionDenied" title="Permalink to this definition">¶</a></dt>
+<dd><p>Permission Denied Exception returning a 403.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="spylib.exceptions.ServiceUnavailable">
+<em class="property">exception </em><code class="sig-prename descclassname">spylib.exceptions.</code><code class="sig-name descname">ServiceUnavailable</code><span class="sig-paren">(</span><em class="sig-param">code</em>, <em class="sig-param">message=None</em>, <em class="sig-param">errors=None</em>, <em class="sig-param">response=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.exceptions.ServiceUnavailable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Service unavailable exception resulting from a failed service call.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="spylib.exceptions.Timeout">
+<em class="property">exception </em><code class="sig-prename descclassname">spylib.exceptions.</code><code class="sig-name descname">Timeout</code><span class="sig-paren">(</span><em class="sig-param">message=None</em>, <em class="sig-param">errors=None</em>, <em class="sig-param">response=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.exceptions.Timeout" title="Permalink to this definition">¶</a></dt>
+<dd><p>A timeout exception resulting from an API timeout.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-spylib.auth_client">
+<span id="auth-client-module"></span><h1>Auth Client Module<a class="headerlink" href="#module-spylib.auth_client" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="spylib.auth_client.AuthClient">
+<em class="property">class </em><code class="sig-prename descclassname">spylib.auth_client.</code><code class="sig-name descname">AuthClient</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.auth_client.AuthClient" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="spylib.auth_client.AuthClient.associate_entity_with_permission">
+<code class="sig-name descname">associate_entity_with_permission</code><span class="sig-paren">(</span><em class="sig-param">entity_uuid</em>, <em class="sig-param">permission_name</em>, <em class="sig-param">permission_owner_uuid</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.auth_client.AuthClient.associate_entity_with_permission" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an entity uuid, a permission name and that permissions owner - associates the entity with that permission.
+Returns the resulting JSON from the request.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.auth_client.AuthClient.create_auth_perm">
+<code class="sig-name descname">create_auth_perm</code><span class="sig-paren">(</span><em class="sig-param">owner_uuid</em>, <em class="sig-param">permission_name</em>, <em class="sig-param">description=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.auth_client.AuthClient.create_auth_perm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a permission on auth called <cite>permission_name</cite> that’s owned by the <cite>owner_uuid</cite> and with description if provided,
+Returns the resulting JSON from the request.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.auth_client.AuthClient.deassociate_entity_with_permission">
+<code class="sig-name descname">deassociate_entity_with_permission</code><span class="sig-paren">(</span><em class="sig-param">entity_uuid</em>, <em class="sig-param">permission_name</em>, <em class="sig-param">permission_owner_uuid</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.auth_client.AuthClient.deassociate_entity_with_permission" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an entity uuid, a permission name, and that permissions owner - deassociates the given entity uuid with that permission.
+The expected side effect from this function, upon success, is that the entity no longer has access to the provided permission.
+On sucess, is a void function
+On failure, raises an APIException.
+Following the deletion, the client’s tokens are fetched to make the access token reflect changes on auth.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Sokanu
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

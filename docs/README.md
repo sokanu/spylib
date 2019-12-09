@@ -8,5 +8,5 @@ pip install sphinxcontrib-napoleon
 Then, to generate the docs page.
 
 ```
-make html
+make github
 ```
