@@ -11,6 +11,10 @@
 4. Be framework agnostic.
 5. Use the least number of dependencies as possible.
 
+## Documentation
+
+[Documentation can be seen here.](https://sokanu.github.io/spylib/)
+
 ## How to install spylib
 
 Add the following to your requirements.txt file on its own line; and replace `va.b.c` with the SEMVER version of this library that you'd like to consume (e.g. `v0.0.1`)
