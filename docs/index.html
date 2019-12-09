@@ -349,6 +349,24 @@ exist.</p>
 </div>
 <div class="section" id="module-spylib.permission">
 <span id="permission-module"></span><h1>Permission Module<a class="headerlink" href="#module-spylib.permission" title="Permalink to this headline">¶</a></h1>
+<p>Permissions file for Spylib.</p>
+<dl class="function">
+<dt id="spylib.permission.has_permission">
+<code class="sig-prename descclassname">spylib.permission.</code><code class="sig-name descname">has_permission</code><span class="sig-paren">(</span><em class="sig-param">jwt</em>, <em class="sig-param">uuid</em>, <em class="sig-param">permission</em>, <em class="sig-param">JWT_ALGORITHM</em>, <em class="sig-param">JWT_SECRET</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.permission.has_permission" title="Permalink to this definition">¶</a></dt>
+<dd><p>Permission check on JWT for a given uuid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>jwt</strong> (<em>str</em>) – A JSON Web Token that is deciphered and checked.</p></li>
+<li><p><strong>uuid</strong> (<em>str</em>) – The UUID that is checked for a given permission.</p></li>
+<li><p><strong>permission</strong> (<em>str</em>) – The permission that is checked to exist on the given uuid.</p></li>
+<li><p><strong>JWT_ALGORITHM</strong> (<em>str</em>) – The algorithm used for encoding and decoding the jwt.</p></li>
+<li><p><strong>JWT_SECRET</strong> (<em>str</em>) – The secret used for encoding and decoding the jwt.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 <div class="section" id="module-spylib.exceptions">
 <span id="exception-module"></span><h1>Exception Module<a class="headerlink" href="#module-spylib.exceptions" title="Permalink to this headline">¶</a></h1>
