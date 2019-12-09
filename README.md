@@ -20,13 +20,6 @@
 Add the following to your requirements.txt file on its own line; and replace `va.b.c` with the SEMVER version of this library that you'd like to consume (e.g. `v0.0.1`)
 `git+https://github.com/sokanu/spylib.git@va.b.c#egg=spylib`
 
-## Using our AuthClient
-We have a client that integrates with our auth system. You can import it and use it like so
-```
-from spylib import AuthClient
-
-```
-Please check the file itself for up to date docs on usage. 
 ## Tests
 
 Tests are run be unit test discovery. Please run the following command locally to run the suite.
