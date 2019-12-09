@@ -1,10 +1,10 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit
-    rev: v1.18.3
+    rev: v1.20.0
     hooks:
       - id: validate_manifest
   - repo: https://github.com/PyCQA/pydocstyle
-    rev: 4.0.1
+    rev: 5.0.1
     hooks:
       - id: pydocstyle
   - repo: https://github.com/python-modernize/python-modernize
@@ -12,14 +12,14 @@ repos:
     hooks:
       - id: python-modernize
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.7.8
+    rev: 3.7.9
     hooks:
       - id: flake8
         language_version: python3.7
       - id: flake8
         language_version: python2.7
   - repo: https://github.com/ambv/black
-    rev: 19.3b0
+    rev: 19.10b0
     hooks:
       - id: black
         language_version: python3.7

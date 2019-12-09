@@ -90,6 +90,7 @@ class ServiceRequestFactory(Observable):
     The factory requires a UUID and API_KEY when being used, as this will act as a fallback in the event your provided tokens fail.
     Storing tokens, and providing configuration is the consumers responsibility when using this library. Fortunately, there are some features provided with spylib that will make this easier.
     When implementing your cross service request, please consider establishing a class that consumes our `Observer` class with a notify functionality. When tokens change in your instance, the observer class will be notified of these changes.
+
     """
 
     METHOD_MAP = {
