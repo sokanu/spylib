@@ -434,31 +434,92 @@ exist.</p>
 </div>
 <div class="section" id="module-spylib.auth_client">
 <span id="auth-client-module"></span><h1>Auth Client Module<a class="headerlink" href="#module-spylib.auth_client" title="Permalink to this headline">¶</a></h1>
+<p>Auth Client file for Spylib.</p>
 <dl class="class">
 <dt id="spylib.auth_client.AuthClient">
 <em class="property">class </em><code class="sig-prename descclassname">spylib.auth_client.</code><code class="sig-name descname">AuthClient</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.auth_client.AuthClient" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>AuthClient used for intra service communication.</p>
+<dl class="method">
 <dt id="spylib.auth_client.AuthClient.associate_entity_with_permission">
 <code class="sig-name descname">associate_entity_with_permission</code><span class="sig-paren">(</span><em class="sig-param">entity_uuid</em>, <em class="sig-param">permission_name</em>, <em class="sig-param">permission_owner_uuid</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.auth_client.AuthClient.associate_entity_with_permission" title="Permalink to this definition">¶</a></dt>
-<dd><p>Given an entity uuid, a permission name and that permissions owner - associates the entity with that permission.
-Returns the resulting JSON from the request.</p>
+<dd><p>Given an entity uuid, a permission name and that permissions owner - associates the entity with that permission.</p>
+<p>Returns the resulting JSON from the request.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entity_uuid</strong> (<em>str</em>) – UUID of the entity.</p></li>
+<li><p><strong>permission_name</strong> (<em>str</em>) – Name of the permission.</p></li>
+<li><p><strong>permission_owner_uuid</strong> (<em>str</em>) – UUID belonging to the owner of the permission.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="spylib.auth_client.AuthClient.create_auth_perm">
 <code class="sig-name descname">create_auth_perm</code><span class="sig-paren">(</span><em class="sig-param">owner_uuid</em>, <em class="sig-param">permission_name</em>, <em class="sig-param">description=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.auth_client.AuthClient.create_auth_perm" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a permission on auth called <cite>permission_name</cite> that’s owned by the <cite>owner_uuid</cite> and with description if provided,
-Returns the resulting JSON from the request.</p>
+<dd><p>Create a permission on auth called <cite>permission_name</cite> that’s owned by the <cite>owner_uuid</cite> and with description if provided.</p>
+<p>Returns the resulting JSON from the request.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>owner_uuid</strong> (<em>str</em>) – UUID of the owner of the permission.</p></li>
+<li><p><strong>permission_name</strong> (<em>str</em>) – Name of the permission.</p></li>
+<li><p><strong>description</strong> (<em>str</em>) – Description of the permission.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.auth_client.AuthClient.create_entity">
+<code class="sig-name descname">create_entity</code><span class="sig-paren">(</span><em class="sig-param">email: Optional[str] = None</em>, <em class="sig-param">description: Optional[str] = None</em>, <em class="sig-param">password: Optional[str] = None</em>, <em class="sig-param">permissions: list = []</em>, <em class="sig-param">permission_sets: list = []</em><span class="sig-paren">)</span> &#x2192; Union[dict, spylib.exceptions.APIException]<a class="headerlink" href="#spylib.auth_client.AuthClient.create_entity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new user entity on auth.</p>
+<p>Optionally append a password, or api_key to the entity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>email</strong> (<em>str</em>) – An email for the entity.</p></li>
+<li><p><strong>description</strong> (<em>str</em>) – A description of the entity.</p></li>
+<li><p><strong>password</strong> (<em>str</em>) – Password of the entity.</p></li>
+<li><p><strong>permissions</strong> (<em>list</em>) – List of permissions.</p></li>
+<li><p><strong>permission_sets</strong> (<em>list</em>) – List of permission sets.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spylib.auth_client.AuthClient.create_entity_api_key">
+<code class="sig-name descname">create_entity_api_key</code><span class="sig-paren">(</span><em class="sig-param">entity_uuid: str</em>, <em class="sig-param">api_key_is_active: bool = True</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.auth_client.AuthClient.create_entity_api_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new entity api key on auth.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entity_uuid</strong> (<em>str</em>) – Entity uuid to associate the api key with.</p></li>
+<li><p><strong>api_key_is_active</strong> (<em>bool</em>) – Whether the api key is active, or inactive.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="spylib.auth_client.AuthClient.deassociate_entity_with_permission">
 <code class="sig-name descname">deassociate_entity_with_permission</code><span class="sig-paren">(</span><em class="sig-param">entity_uuid</em>, <em class="sig-param">permission_name</em>, <em class="sig-param">permission_owner_uuid</em><span class="sig-paren">)</span><a class="headerlink" href="#spylib.auth_client.AuthClient.deassociate_entity_with_permission" title="Permalink to this definition">¶</a></dt>
-<dd><p>Given an entity uuid, a permission name, and that permissions owner - deassociates the given entity uuid with that permission.
-The expected side effect from this function, upon success, is that the entity no longer has access to the provided permission.
-On sucess, is a void function
-On failure, raises an APIException.
-Following the deletion, the client’s tokens are fetched to make the access token reflect changes on auth.</p>
+<dd><p>Given an entity uuid, a permission name, and that permissions owner - deassociates the given entity uuid with that permission.</p>
+<p>The expected side effect from this function, upon success, is that the entity no longer has access to the provided permission.</p>
+<p>On sucess, is a void function</p>
+<p>On failure, raises an APIException.</p>
+<p>Following the deletion, the client’s tokens are fetched to make the access token reflect changes on auth.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entity_uuid</strong> (<em>str</em>) – UUID of the entity.</p></li>
+<li><p><strong>permission_name</strong> (<em>str</em>) – Name of the permission.</p></li>
+<li><p><strong>permission_owner_uuid</strong> (<em>str</em>) – UUID belonging to the owner of the permission.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
