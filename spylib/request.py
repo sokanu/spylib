@@ -259,6 +259,9 @@ class ServiceRequestFactory(Observable):
             if next_calls_kwargs is None:
                 next_calls_kwargs = {}
             resp = func(url, headers=headers, timeout=timeout, **next_calls_kwargs)
+            print(method + ': ' + url)
+            print("headers: " + str(headers))
+            print("body: " + str(next_calls_kwargs))
         except RequestsTimeout:
             # Retry if we can, otherwise throw an internal exception
             if retry_count > 0:
