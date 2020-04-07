@@ -126,6 +126,8 @@ class ServiceRequestFactory(Observable):
         """
         super(ServiceRequestFactory, self).__init__(*args, **kwargs)
 
+        print("ServiceRequestFactory.uuid: " + str(uuid))
+        print("ServiceRequestFactory.api_key: " + str(api_key))
         self.uuid = uuid
         self.api_key = api_key
         self.access_token = access_token
@@ -246,6 +248,7 @@ class ServiceRequestFactory(Observable):
             params.update(kwargs.pop("params", {}))
             additional_kwargs = {"params": params}
         elif method in ["POST", "PATCH", "PUT"]:
+            print("payload: " + str(payload))
             # Pop json from kwargs so we don't pass it to requests twice
             json = payload or {}
             json.update(kwargs.pop("json", {}))
