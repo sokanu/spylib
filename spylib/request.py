@@ -126,8 +126,6 @@ class ServiceRequestFactory(Observable):
         """
         super(ServiceRequestFactory, self).__init__(*args, **kwargs)
 
-        print("ServiceRequestFactory.uuid: " + str(uuid))
-        print("ServiceRequestFactory.api_key: " + str(api_key))
         self.uuid = uuid
         self.api_key = api_key
         self.access_token = access_token
@@ -248,7 +246,6 @@ class ServiceRequestFactory(Observable):
             params.update(kwargs.pop("params", {}))
             additional_kwargs = {"params": params}
         elif method in ["POST", "PATCH", "PUT"]:
-            print("payload: " + str(payload))
             # Pop json from kwargs so we don't pass it to requests twice
             json = payload or {}
             json.update(kwargs.pop("json", {}))
@@ -258,13 +255,10 @@ class ServiceRequestFactory(Observable):
 
         func = self.METHOD_MAP[method]
         try:
-            next_calls_kwargs = kwargs.update(additional_kwargs)
-            if next_calls_kwargs is None:
-                next_calls_kwargs = {}
-            resp = func(url, headers=headers, timeout=timeout, **next_calls_kwargs)
-            print(method + ': ' + url)
-            print("headers: " + str(headers))
-            print("body: " + str(next_calls_kwargs))
+            kwargs.update(additional_kwargs)
+            if kwargs is None:
+                kwargs = {}
+            resp = func(url, headers=headers, timeout=timeout, **kwargs)
         except RequestsTimeout:
             # Retry if we can, otherwise throw an internal exception
             if retry_count > 0:
