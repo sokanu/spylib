@@ -114,7 +114,7 @@ class AuthClient(ServiceRequestFactory):
 
         """
         payload = {
-            "entity": entity_uuid,
+            "entity": str(entity_uuid),
             "permissions": [{"owner": permission_owner_uuid, "name": permission_name}],
         }
         resp = self.post(
@@ -157,7 +157,7 @@ class AuthClient(ServiceRequestFactory):
 
         """
         payload = {
-            "entity": entity_uuid,
+            "entity": str(entity_uuid),
             "permissions": [{"owner": permission_owner_uuid, "name": permission_name}],
         }
         resp = self.delete(
