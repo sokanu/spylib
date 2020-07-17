@@ -103,8 +103,6 @@ class ServiceRequestFactory(Observable):
         "PUT": put,
     }
 
-    MAX_SLEEP_TIMEOUT = 2
-
     def __init__(
         self,
         uuid=None,
@@ -113,6 +111,7 @@ class ServiceRequestFactory(Observable):
         algorithm=None,
         access_token=None,
         refresh_token=None,
+        sleep_timeout=2,
         *args,
         **kwargs
     ):
@@ -136,7 +135,7 @@ class ServiceRequestFactory(Observable):
         self.refresh_token = refresh_token
         self.secret = secret
         self.algorithm = algorithm
-
+        self.MAX_SLEEP_TIMEOUT = sleep_timeout
         # Attempt to ensure that the access token is usable
         if self.access_token:
             try:
