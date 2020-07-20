@@ -1,4 +1,4 @@
-# Spylib (Sokanu Python Lib)
+# Spylib (Sokanu Python Lib) [![CircleCI](https://circleci.com/gh/sokanu/spylib.svg?style=svg)](https://circleci.com/gh/sokanu/spylib) [![codecov](https://codecov.io/gh/sokanu/spylib/branch/master/graph/badge.svg)](https://codecov.io/gh/sokanu/spylib)
 ![Spylib Logo](img.png)
 
 *A library used for sharing abstract code between services*
