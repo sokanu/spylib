@@ -13,7 +13,7 @@ jobs:
       - run: pip install -r requirements.txt
       - run: coverage run -m unittest discover
       - codecov/upload:
-          file: coverage.json
+          file: ./coverage.json
           token: $CODECOV_TOKEN
           upload_name: "Spylib-${CIRCLE_SHA1}"
 workflows:
