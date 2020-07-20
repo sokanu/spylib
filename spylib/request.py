@@ -16,6 +16,8 @@ from requests import get, delete, post, patch, put
 from six.moves.urllib.parse import urljoin
 from requests.exceptions import Timeout as RequestsTimeout
 import copy
+import time
+import random
 
 
 class Observable(object):
@@ -109,6 +111,7 @@ class ServiceRequestFactory(Observable):
         algorithm=None,
         access_token=None,
         refresh_token=None,
+        sleep_timeout=2,
         *args,
         **kwargs
     ):
@@ -132,7 +135,7 @@ class ServiceRequestFactory(Observable):
         self.refresh_token = refresh_token
         self.secret = secret
         self.algorithm = algorithm
-
+        self.MAX_SLEEP_TIMEOUT = sleep_timeout
         # Attempt to ensure that the access token is usable
         if self.access_token:
             try:
@@ -191,6 +194,7 @@ class ServiceRequestFactory(Observable):
         timeout=2,
         retry_count=0,
         retry_on_401_403=True,
+        attempts_retried=0,
         **kwargs
     ):
         """
@@ -209,6 +213,7 @@ class ServiceRequestFactory(Observable):
             retry_on_401_403 (bool): Whether or not a retry should occur on a 401 or 403
                 - Note: When this is set to `True`, a 401 or a 403 will cause the `ServiceRequestFactory` to refresh
                   the tokens, and to make the request again - it will only try to refresh the tokens once
+            attempts_retried (int) - Keeps track of the number of times the service request is retried.
             **kwargs: Additional keyword arguments that are passed to the requests method
 
         Raises:
@@ -260,8 +265,10 @@ class ServiceRequestFactory(Observable):
                 kwargs = {}
             resp = func(url, headers=headers, timeout=timeout, **kwargs)
         except RequestsTimeout:
-            # Retry if we can, otherwise throw an internal exception
             if retry_count > 0:
+                time.sleep(
+                    random.random(0, min(self.MAX_SLEEP_TIMEOUT, 2 ** attempts_retried))
+                )
                 return self.make_service_request(
                     base_url,
                     path,
@@ -269,6 +276,7 @@ class ServiceRequestFactory(Observable):
                     payload=payload,
                     timeout=timeout,
                     retry_count=retry_count - 1,
+                    attempts_retried=attempts_retried + 1,
                     retry_on_401_403=retry_on_401_403,
                     **original_kwargs
                 )
@@ -285,6 +293,9 @@ class ServiceRequestFactory(Observable):
             and retry_on_401_403
             and self.can_authenticate()
         ):
+            time.sleep(
+                random.random(0, min(self.MAX_SLEEP_TIMEOUT, 2 ** attempts_retried))
+            )
             self.fetch_new_tokens()
             return self.make_service_request(
                 base_url,
@@ -293,6 +304,7 @@ class ServiceRequestFactory(Observable):
                 payload=payload,
                 timeout=timeout,
                 retry_count=retry_count - 1,
+                attempts_retried=attempts_retried + 1,
                 retry_on_401_403=False,
                 **original_kwargs
             )
