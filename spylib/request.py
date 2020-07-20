@@ -267,7 +267,9 @@ class ServiceRequestFactory(Observable):
         except RequestsTimeout:
             if retry_count > 0:
                 time.sleep(
-                    random.random(0, min(self.MAX_SLEEP_TIMEOUT, 2 ** attempts_retried))
+                    random.randint(
+                        0, min(self.MAX_SLEEP_TIMEOUT, 2 ** attempts_retried)
+                    )
                 )
                 return self.make_service_request(
                     base_url,
@@ -294,7 +296,7 @@ class ServiceRequestFactory(Observable):
             and self.can_authenticate()
         ):
             time.sleep(
-                random.random(0, min(self.MAX_SLEEP_TIMEOUT, 2 ** attempts_retried))
+                random.randint(0, min(self.MAX_SLEEP_TIMEOUT, 2 ** attempts_retried))
             )
             self.fetch_new_tokens()
             return self.make_service_request(
